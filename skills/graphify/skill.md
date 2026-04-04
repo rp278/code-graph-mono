@@ -57,7 +57,7 @@ Follow these steps in order. Do not skip steps.
 ### Step 1 - Ensure graphify is installed
 
 ```bash
-python3 -c "import graphify" 2>/dev/null || pip install graphify -q --break-system-packages 2>&1 | tail -3
+python3 -c "import graphify" 2>/dev/null || pip install graphifyy -q --break-system-packages 2>&1 | tail -3
 ```
 
 If the import succeeds, print nothing and move straight to Step 2.
@@ -498,9 +498,25 @@ print('graph.svg written - embeds in Obsidian, Notion, GitHub READMEs')
 "
 ```
 
-### Step 7c - SVG export already covered in Step 7b above
+### Step 7c - GraphML export (only if --graphml flag)
 
-_(No separate --obsidian flag - Obsidian vault is always generated in Step 6 by default.)_
+```bash
+python3 -c "
+import json
+from graphify.build import build_from_json
+from graphify.export import to_graphml
+from pathlib import Path
+
+extraction = json.loads(Path('.graphify_extract.json').read_text())
+analysis   = json.loads(Path('.graphify_analysis.json').read_text())
+
+G = build_from_json(extraction)
+communities = {int(k): v for k, v in analysis['communities'].items()}
+
+to_graphml(G, communities, 'graphify-out/graph.graphml')
+print('graph.graphml written - open in Gephi, yEd, or any GraphML tool')
+"
+```
 
 ### Step 7d - MCP server (only if --mcp flag)
 

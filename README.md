@@ -7,7 +7,7 @@
 > Andrej Karpathy keeps a `/raw` folder where he drops papers, tweets, screenshots, and notes. graphify is the answer to that problem - 71.5x fewer tokens per query vs reading the raw files, persistent across sessions, honest about what it found vs guessed.
 
 ```
-/graphify ./raw
+/graphify .                        # works on any folder - your codebase, notes, papers, anything
 ```
 
 ```
@@ -70,13 +70,13 @@ When the user types `/graphify`, invoke the Skill tool with `skill: "graphify"` 
 /graphify explain "SwinTransformer"
 
 /graphify ./raw --watch            # auto-sync graph as files change (code: instant, docs: notifies you)
-
-graphify hook install              # post-commit git hook - rebuilds graph on every commit automatically
 /graphify ./raw --wiki             # build agent-crawlable wiki (index.md + article per community)
 /graphify ./raw --svg              # export graph.svg
 /graphify ./raw --graphml          # export graph.graphml (Gephi, yEd)
 /graphify ./raw --neo4j            # generate cypher.txt for Neo4j
 /graphify ./raw --mcp              # start MCP stdio server
+
+graphify hook install              # post-commit git hook - rebuilds graph on every commit automatically
 ```
 
 Works with any mix of file types:

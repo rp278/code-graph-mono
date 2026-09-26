@@ -29,6 +29,7 @@ export default function Header({
             disabled={repos.length === 0}
           >
             {repos.length === 0 && <option value="">No repos</option>}
+            {repos.length > 0 && <option value="all">All repos</option>}
             {repos.map((r) => (
               <option key={r.id} value={r.id}>
                 {r.name}

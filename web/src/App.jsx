@@ -42,7 +42,7 @@ export default function App() {
     try {
       const r = await api.getRepos();
       setRepos(r);
-      setSelectedRepoId((prev) => prev || r[0]?.id || '');
+      setSelectedRepoId((prev) => prev || 'all');
     } catch (e) {
       setReposError(e.message);
     } finally {

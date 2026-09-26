@@ -23,7 +23,8 @@ async function request(path, { method = 'GET', body } = {}) {
 
 export const api = {
   getRepos: () => request('/api/repos'),
-  getGraph: (repoId) => request(`/api/graph?repo_id=${encodeURIComponent(repoId)}`),
+  getGraph: (repoId) =>
+    request(!repoId || repoId === 'all' ? '/api/graph' : `/api/graph?repo_id=${encodeURIComponent(repoId)}`),
   getStats: () => request('/api/graph/stats'),
   rebuild: (repoId) => request('/api/graph/rebuild', { method: 'POST', body: { repo_id: repoId } }),
   chat: (question, repoId) =>

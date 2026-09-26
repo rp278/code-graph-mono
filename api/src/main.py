@@ -125,24 +125,48 @@ def register_repo(repo: RepoIn) -> dict[str, Any]:
 
 @app.get("/api/graph")
 def get_graph(repo_id: Optional[str] = None, limit: int = 500) -> dict[str, Any]:
-    """Nodes + edges for the React Flow dashboard."""
-    where = "WHERE n.repo = $repo" if repo_id else ""
-    params: dict[str, Any] = {"limit": limit}
-    if repo_id:
-        params["repo"] = repo_id
+    """Nodes + edges for the React Flow dashboard.
+
+    When a single repo is selected, its nodes are returned together with
+    their direct neighbors — even when those neighbors live in another
+    repo — so cross-repo links (frontend fetch -> backend endpoint)
+    stay visible instead of being filtered out.
+    """
+    if repo_id == "all":
+        repo_id = None
     with driver.session() as s:
-        nodes = s.run(
-            f"MATCH (n:Node) {where} RETURN n.gid AS id, n.label AS label, "
-            f"n.type AS type, n.source_file AS file, n.repo AS repo "
-            f"LIMIT $limit",
-            **params,
-        ).data()
-        edges = s.run(
-            f"MATCH (a:Node)-[e]->(b:Node) {where.replace('n.', 'a.')} "
-            f"RETURN a.gid AS source, b.gid AS target, "
-            f"type(e) AS relation, e.confidence AS confidence LIMIT $limit",
-            **params,
-        ).data()
+        if repo_id:
+            nodes = s.run(
+                "MATCH (n:Node) WHERE n.repo = $repo "
+                "OPTIONAL MATCH (n)--(m:Node) "
+                "WITH collect(DISTINCT n) + collect(DISTINCT m) AS all "
+                "UNWIND all AS x "
+                "RETURN DISTINCT x.gid AS id, x.label AS label, "
+                "x.type AS type, x.source_file AS file, x.repo AS repo "
+                "LIMIT $limit",
+                repo=repo_id, limit=limit,
+            ).data()
+            edges = s.run(
+                "MATCH (n:Node) WHERE n.repo = $repo "
+                "MATCH (n)-[e]-(m:Node) "
+                "RETURN DISTINCT startNode(e).gid AS source, "
+                "endNode(e).gid AS target, type(e) AS relation, "
+                "e.confidence AS confidence LIMIT $limit",
+                repo=repo_id, limit=limit,
+            ).data()
+        else:
+            nodes = s.run(
+                "MATCH (n:Node) RETURN n.gid AS id, n.label AS label, "
+                "n.type AS type, n.source_file AS file, n.repo AS repo "
+                "LIMIT $limit",
+                limit=limit,
+            ).data()
+            edges = s.run(
+                "MATCH (a:Node)-[e]->(b:Node) "
+                "RETURN a.gid AS source, b.gid AS target, "
+                "type(e) AS relation, e.confidence AS confidence LIMIT $limit",
+                limit=limit,
+            ).data()
     for i, e in enumerate(edges):
         e["id"] = f"e{i}"
     return {"nodes": nodes, "edges": edges}
@@ -322,7 +346,8 @@ def ask_claude(question: str, context: list[dict[str, Any]]) -> str:
 
 @app.post("/api/chat")
 def chat(body: ChatIn) -> dict[str, Any]:
-    context = subgraph_for(body.question, body.repo_id)
+    repo_id = None if body.repo_id in (None, "all") else body.repo_id
+    context = subgraph_for(body.question, repo_id)
     if OPENAI_API_KEY:
         try:
             answer = ask_openai(body.question, context)

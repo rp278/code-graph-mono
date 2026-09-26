@@ -60,7 +60,7 @@ function renderRich(text) {
   });
 }
 
-export default function ChatView({ repoId, repos, onSelectRepo, onJumpToNode }) {
+export default function ChatView({ repoId, repos, onJumpToNode }) {
   const [messages, setMessages] = useState([]);
   const [input, setInput] = useState('');
   const [sending, setSending] = useState(false);
@@ -107,18 +107,12 @@ export default function ChatView({ repoId, repos, onSelectRepo, onJumpToNode }) 
     <div className="chat-view">
       <div className="chat-scope">
         <span className="muted">Asking about</span>
-        <select
-          className="repo-select small"
-          value={repoId}
-          onChange={(e) => onSelectRepo(e.target.value)}
-          disabled={repos.length === 0}
-        >
-          {repos.map((r) => (
-            <option key={r.id} value={r.id}>
-              {r.name}
-            </option>
-          ))}
-        </select>
+        <strong>
+          {repoId === 'all'
+            ? 'All repos'
+            : repos.find((r) => r.id === repoId)?.name || repoId || '—'}
+        </strong>
+        <span className="muted small">— change it in the Repo menu above</span>
       </div>
 
       <div className="chat-messages">

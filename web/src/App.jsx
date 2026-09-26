@@ -274,7 +274,6 @@ export default function App() {
         <ChatView
           repoId={selectedRepoId}
           repos={repos}
-          onSelectRepo={setSelectedRepoId}
           onJumpToNode={jumpToNode}
         />
       )}

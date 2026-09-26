@@ -30,6 +30,9 @@ NEO4J_PASSWORD = os.environ.get("NEO4J_PASSWORD", "codegraph123")
 
 ANTHROPIC_API_KEY = os.environ.get("ANTHROPIC_API_KEY", "")
 ANTHROPIC_MODEL = os.environ.get("ANTHROPIC_MODEL", "claude-sonnet-4-20250514")
+OPENAI_API_KEY = os.environ.get("OPENAI_API_KEY", "")
+OPENAI_MODEL = os.environ.get("OPENAI_MODEL", "gpt-4o-mini")
+OPENAI_BASE_URL = os.environ.get("OPENAI_BASE_URL", "https://api.openai.com/v1")
 
 STOPWORDS = {
     "what", "where", "which", "when", "does", "do", "the", "and", "for",
@@ -236,6 +239,47 @@ def subgraph_for(question: str, repo_id: Optional[str]) -> list[dict[str, Any]]:
         return s.run(cypher, **params).data()
 
 
+def ask_openai(question: str, context: list[dict[str, Any]]) -> str:
+    """OpenAI-compatible chat completions (OpenAI, Llama hosts, OpenRouter…)."""
+    context_text = "\n".join(
+        f"- {c['label']} ({c['type']}) in {c['file']} "
+        f"[repo: {c['repo']}] neighbors: {', '.join(c['neighbors'][:6])}"
+        for c in context
+    ) or "(no graph context found)"
+    payload = {
+        "model": OPENAI_MODEL,
+        "max_tokens": 1024,
+        "messages": [
+            {
+                "role": "system",
+                "content": (
+                    "You are codeGraph, an AI assistant that answers questions about "
+                    "a codebase using its knowledge graph. Answer from the graph "
+                    "context below. Be concrete: name files, functions, endpoints. "
+                    "If the context is insufficient, say what is missing instead of "
+                    "guessing."
+                ),
+            },
+            {
+                "role": "user",
+                "content": f"Knowledge graph context:\n{context_text}\n\n"
+                           f"Question: {question}",
+            },
+        ],
+    }
+    req = urllib.request.Request(
+        f"{OPENAI_BASE_URL.rstrip('/')}/chat/completions",
+        data=json.dumps(payload).encode(),
+        headers={
+            "content-type": "application/json",
+            "authorization": f"Bearer {OPENAI_API_KEY}",
+        },
+    )
+    with urllib.request.urlopen(req, timeout=60) as resp:
+        body = json.loads(resp.read().decode())
+    return body["choices"][0]["message"]["content"]
+
+
 def ask_claude(question: str, context: list[dict[str, Any]]) -> str:
     context_text = "\n".join(
         f"- {c['label']} ({c['type']}) in {c['file']} "
@@ -277,17 +321,23 @@ def ask_claude(question: str, context: list[dict[str, Any]]) -> str:
 @app.post("/api/chat")
 def chat(body: ChatIn) -> dict[str, Any]:
     context = subgraph_for(body.question, body.repo_id)
-    if not ANTHROPIC_API_KEY:
-        return {
-            "answer": None,
-            "message": (
-                "Set ANTHROPIC_API_KEY to enable AI answers. "
-                "Graph context retrieved below."
-            ),
-            "context": context,
-        }
-    try:
-        answer = ask_claude(body.question, context)
-    except Exception as e:  # noqa: BLE001
-        raise HTTPException(502, f"LLM call failed: {e}")
-    return {"answer": answer, "context": context}
+    if OPENAI_API_KEY:
+        try:
+            answer = ask_openai(body.question, context)
+        except Exception as e:  # noqa: BLE001
+            raise HTTPException(502, f"LLM call failed: {e}")
+        return {"answer": answer, "context": context}
+    if ANTHROPIC_API_KEY:
+        try:
+            answer = ask_claude(body.question, context)
+        except Exception as e:  # noqa: BLE001
+            raise HTTPException(502, f"LLM call failed: {e}")
+        return {"answer": answer, "context": context}
+    return {
+        "answer": None,
+        "message": (
+            "Set OPENAI_API_KEY (or ANTHROPIC_API_KEY) to enable AI answers. "
+            "Graph context retrieved below."
+        ),
+        "context": context,
+    }

@@ -15,6 +15,13 @@ from __future__ import annotations
 import os
 import re
 
+try:
+    from dotenv import load_dotenv
+
+    load_dotenv()  # optional: NEO4J_URI / NEO4J_USER / NEO4J_PASSWORD from .env
+except ImportError:
+    pass
+
 
 def _config(uri=None, user=None, password=None):
     return (

@@ -2278,7 +2278,7 @@ def extract(paths: list[Path]) -> dict:
     except Exception:
         root = Path(".")
 
-    _JS_SUFFIXES = {".js", ".ts", ".tsx"}
+    _JS_SUFFIXES = {".js", ".jsx", ".ts", ".tsx"}
 
     for path in paths:
         if path.suffix == ".py":
@@ -2414,7 +2414,7 @@ def collect_files(target: Path) -> list[Path]:
     if target.is_file():
         return [target]
     _EXTENSIONS = (
-        "*.py", "*.js", "*.ts", "*.tsx", "*.go", "*.rs",
+        "*.py", "*.js", "*.jsx", "*.ts", "*.tsx", "*.go", "*.rs",
         "*.java", "*.c", "*.h", "*.cpp", "*.cc", "*.cxx", "*.hpp",
         "*.rb", "*.cs", "*.kt", "*.kts", "*.scala", "*.php",
     )

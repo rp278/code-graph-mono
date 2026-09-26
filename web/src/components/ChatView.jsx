@@ -112,7 +112,6 @@ export default function ChatView({ repoId, repos, onJumpToNode }) {
             ? 'All repos'
             : repos.find((r) => r.id === repoId)?.name || repoId || '—'}
         </strong>
-        <span className="muted small">— change it in the Repo menu above</span>
       </div>
 
       <div className="chat-messages">

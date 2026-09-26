@@ -82,14 +82,25 @@ class ChatIn(BaseModel):
 
 # ---------------------------------------------------------------- repos
 
+def _repos_file() -> Path:
+    """Local override wins: repos.local.json (gitignored) beats repos.json.
+
+    Lets each machine keep its own repo paths without dirtying the
+    tracked file, so `git pull` never conflicts.
+    """
+    local = BASE_DIR / "repos.local.json"
+    return local if local.exists() else REPOS_FILE
+
+
 def load_repos() -> list[dict[str, Any]]:
-    if not REPOS_FILE.exists():
+    f = _repos_file()
+    if not f.exists():
         return []
-    return json.loads(REPOS_FILE.read_text())
+    return json.loads(f.read_text())
 
 
 def save_repos(repos: list[dict[str, Any]]) -> None:
-    REPOS_FILE.write_text(json.dumps(repos, indent=2))
+    _repos_file().write_text(json.dumps(repos, indent=2))
 
 
 @app.get("/health")

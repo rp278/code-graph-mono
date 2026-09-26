@@ -19,8 +19,10 @@ from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from neo4j import GraphDatabase
 from pydantic import BaseModel
+from dotenv import load_dotenv
 
 BASE_DIR = Path(__file__).resolve().parent.parent  # api/
+load_dotenv(BASE_DIR / ".env")  # optional: NEO4J_*, OPENAI_*, ANTHROPIC_* live here
 REPOS_FILE = Path(os.environ.get("CODEGRAPH_REPOS", BASE_DIR / "repos.json"))
 GRAPHIFY_DIR = Path(os.environ.get("GRAPHIFY_DIR", "/home/hatch/workspace/graphify"))
 

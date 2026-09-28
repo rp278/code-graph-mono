@@ -5,13 +5,14 @@
   "agent_id": "agent-087cd852-ad41-4582-b28d-2245986e98a3",
   "notes": [
     "Started via dashboard (Cursor SDK, local runtime) at 2026-09-28T23:28:47.249137+00:00.",
-    "Gate 1: located dual fault — shop-web ProductList uses category objects as React keys and filter state ([object Object] / empty results); shop-api GET /api/categories count subquery returns catalogue total for every chip (all show 8)."
+    "Gate 1: located dual fault — shop-web ProductList uses category objects as React keys and filter state ([object Object] / empty results); shop-api GET /api/categories count subquery returns catalogue total for every chip (all show 8).",
+    "Gate 1 approved for shop-web; Gate 2 root cause: ProductList key/active/setCategory must use category name strings; api.js coercion and fetchCategories flatten rejected; shop-api count remains a separate story."
   ],
   "stories": {
     "shop-web": {
-      "stage": "1-analysis",
+      "stage": "2-rootcause",
       "gates": {
-        "1_analysis": null,
+        "1_analysis": "approved",
         "2_rootcause": null,
         "3_repro": null,
         "4_fix": null,
@@ -20,9 +21,9 @@
       "branch": null,
       "pr_url": null,
       "pending_gate": {
-        "gate": "1_analysis",
-        "presented_at": "2026-09-28T23:30:22Z",
-        "summary": "Analysis for shop-web: ProductList builds chips from GET /api/categories objects {name,count} but uses the whole object as React key and as category filter state, producing duplicate keys `[object Object]` and GET /api/products?category=%5Bobject+Object%5D (empty results). Scope fence: ProductList.jsx key/active/setCategory should use category name strings. Paired shop-api story covers the uniform (8) counts."
+        "gate": "2_rootcause",
+        "presented_at": "2026-09-28T23:32:30Z",
+        "summary": "Root cause for shop-web: ProductList maps category objects into chips but uses the object itself as React key and setCategory value, so keys collide as [object Object] and fetchProducts sends category=[object Object]. Proposed fix (fence: ProductList.jsx only): use c.name (All stays \"\") for key, active state, and setCategory; keep chipLabel on the object. shop-api uniform (8) counts stay out of this fence."
       }
     },
     "shop-api": {

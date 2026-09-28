@@ -185,6 +185,18 @@ def _headless_prompt(requirement_text: str, slug: str) -> str:
 
 
 def _run_turn(slug: str, agent: Any, message: str) -> None:
+    """Run one turn and update the in-memory status cache.
+
+    Deliberately does *not* close the agent except when the whole run
+    has reached a terminal "done" state. `agent.close()` sends a
+    CloseAgent RPC that tears the agent down for good (Agent.resume()
+    can never find it again afterwards) -- and a turn ending because
+    the skill wrote a `pending_gate` and paused for approval is a
+    *normal, expected pause*, not completion. Closing there would
+    (and did, before this fix) make every subsequent approve/revise
+    click 404 with AgentNotFoundError.
+    """
+    done = False
     try:
         with _runs_lock:
             _runs.setdefault(slug, {})
@@ -204,16 +216,18 @@ def _run_turn(slug: str, agent: Any, message: str) -> None:
             derived = "error"
         with _runs_lock:
             _runs[slug]["status"] = derived
+        done = derived == "done"
     except Exception as e:  # noqa: BLE001
         with _runs_lock:
             _runs.setdefault(slug, {})
             _runs[slug]["status"] = "error"
             _runs[slug]["error"] = f"{e}\n{traceback.format_exc()[-2000:]}"
     finally:
-        try:
-            agent.close()
-        except Exception:  # noqa: BLE001
-            pass
+        if done:
+            try:
+                agent.close()
+            except Exception:  # noqa: BLE001
+                pass
 
 
 def start_requirement(requirement_text: str) -> dict[str, Any]:

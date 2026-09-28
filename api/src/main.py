@@ -15,7 +15,7 @@ import urllib.request
 from pathlib import Path
 from typing import Any, Optional
 
-from fastapi import FastAPI, HTTPException
+from fastapi import Depends, FastAPI, Header, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from neo4j import GraphDatabase
 from pydantic import BaseModel
@@ -36,6 +36,21 @@ OPENAI_API_KEY = os.environ.get("OPENAI_API_KEY", "")
 OPENAI_MODEL = os.environ.get("OPENAI_MODEL", "gpt-4o-mini")
 OPENAI_BASE_URL = os.environ.get("OPENAI_BASE_URL", "https://api.openai.com/v1")
 
+# Bearer token gating every endpoint except /health. Empty (unset) means
+# "open" — the default for local dev, where nothing is internet-facing.
+# Any deployment reachable from the internet MUST set this.
+API_TOKEN = os.environ.get("API_TOKEN", "")
+
+# CORS: explicit origin allowlist instead of "*", since credentials-free
+# wildcard CORS on a token-protected API is still a bad habit to leave in.
+ALLOWED_ORIGINS = [
+    o.strip()
+    for o in os.environ.get(
+        "ALLOWED_ORIGINS", "http://localhost:5173,http://127.0.0.1:5173"
+    ).split(",")
+    if o.strip()
+]
+
 STOPWORDS = {
     "what", "where", "which", "when", "does", "do", "the", "and", "for",
     "with", "from", "that", "this", "how", "are", "is", "it", "in", "of",
@@ -50,10 +65,22 @@ WRITE_KEYWORDS = re.compile(
 app = FastAPI(title="codegraph-api", version="0.1.0")
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origins=ALLOWED_ORIGINS,
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+
+def require_token(authorization: Optional[str] = Header(None)) -> None:
+    """Gate every route except /health. No-op when API_TOKEN is unset."""
+    if not API_TOKEN:
+        return
+    expected = f"Bearer {API_TOKEN}"
+    if not authorization or authorization != expected:
+        raise HTTPException(401, "missing or invalid bearer token")
+
+
+auth = Depends(require_token)
 
 driver = GraphDatabase.driver(NEO4J_URI, auth=(NEO4J_USER, NEO4J_PASSWORD))
 
@@ -114,12 +141,12 @@ def health() -> dict[str, Any]:
     return {"status": "ok", "neo4j": neo4j}
 
 
-@app.get("/api/repos")
+@app.get("/api/repos", dependencies=[auth])
 def list_repos() -> list[dict[str, Any]]:
     return load_repos()
 
 
-@app.post("/api/repos", status_code=201)
+@app.post("/api/repos", status_code=201, dependencies=[auth])
 def register_repo(repo: RepoIn) -> dict[str, Any]:
     repos = load_repos()
     repo_id = re.sub(r"[^a-z0-9-]+", "-", repo.name.lower()).strip("-")
@@ -134,7 +161,7 @@ def register_repo(repo: RepoIn) -> dict[str, Any]:
 
 # ---------------------------------------------------------------- graph
 
-@app.get("/api/graph")
+@app.get("/api/graph", dependencies=[auth])
 def get_graph(repo_id: Optional[str] = None, limit: int = 500) -> dict[str, Any]:
     """Nodes + edges for the React Flow dashboard.
 
@@ -183,7 +210,7 @@ def get_graph(repo_id: Optional[str] = None, limit: int = 500) -> dict[str, Any]
     return {"nodes": nodes, "edges": edges}
 
 
-@app.get("/api/graph/stats")
+@app.get("/api/graph/stats", dependencies=[auth])
 def graph_stats() -> dict[str, Any]:
     with driver.session() as s:
         by_type = s.run(
@@ -197,7 +224,7 @@ def graph_stats() -> dict[str, Any]:
     return {"nodes": node_count, "edges": edge_count, "by_type": by_type}
 
 
-@app.post("/api/query")
+@app.post("/api/query", dependencies=[auth])
 def run_query(q: QueryIn) -> dict[str, Any]:
     """Read-only Cypher passthrough for the dashboard / agent."""
     if WRITE_KEYWORDS.search(q.cypher):
@@ -212,7 +239,7 @@ def run_query(q: QueryIn) -> dict[str, Any]:
 
 # ---------------------------------------------------------------- rebuild
 
-@app.post("/api/graph/rebuild")
+@app.post("/api/graph/rebuild", dependencies=[auth])
 def rebuild_graph(body: RebuildIn) -> dict[str, Any]:
     """Rebuild the knowledge graph with our Graphify fork and reload Neo4j.
 
@@ -355,7 +382,7 @@ def ask_claude(question: str, context: list[dict[str, Any]]) -> str:
     )
 
 
-@app.post("/api/chat")
+@app.post("/api/chat", dependencies=[auth])
 def chat(body: ChatIn) -> dict[str, Any]:
     repo_id = None if body.repo_id in (None, "all") else body.repo_id
     context = subgraph_for(body.question, repo_id)

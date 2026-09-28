@@ -236,6 +236,13 @@ function RequirementDetail({ slug, onRespond, responding }) {
 
   const stories = Object.entries(detail.state.stories || {});
   const pendingEntries = stories.filter(([, s]) => s.pending_gate);
+  // `responding` only covers the brief POST round-trip that kicks off a
+  // turn (the actual work runs in a background thread server-side and
+  // can take minutes) -- so gate buttons must ALSO stay disabled for
+  // the whole time run_status is "running"/"starting", or a second
+  // click mid-turn hits the backend's "already mid-turn" guard.
+  const isBusy =
+    responding || detail.run_status === 'running' || detail.run_status === 'starting';
 
   const approve = (repo, gate) => {
     onRespond(slug, `gate ${gate} for ${repo}: approved`, load);
@@ -299,19 +306,19 @@ function RequirementDetail({ slug, onRespond, responding }) {
                   onChange={(e) =>
                     setRevisionDrafts((d) => ({ ...d, [key]: e.target.value }))
                   }
-                  disabled={responding}
+                  disabled={isBusy}
                 />
                 <div className="gate-action-buttons">
                   <button
                     className="rebuild-btn"
-                    disabled={responding}
+                    disabled={isBusy}
                     onClick={() => approve(repo, gate)}
                   >
-                    Approve
+                    {isBusy ? '…' : 'Approve'}
                   </button>
                   <button
                     className="link-btn"
-                    disabled={responding}
+                    disabled={isBusy}
                     onClick={() => revise(repo, gate)}
                   >
                     Send back for revision
@@ -336,14 +343,14 @@ function RequirementDetail({ slug, onRespond, responding }) {
             rows={3}
             value={updateText}
             onChange={(e) => setUpdateText(e.target.value)}
-            disabled={responding}
+            disabled={isBusy}
           />
           <button
             className="rebuild-btn"
-            disabled={responding || !updateText.trim()}
+            disabled={isBusy || !updateText.trim()}
             onClick={sendUpdate}
           >
-            {responding ? '…' : 'Submit change & rerun'}
+            {isBusy ? '…' : 'Submit change & rerun'}
           </button>
         </div>
       )}

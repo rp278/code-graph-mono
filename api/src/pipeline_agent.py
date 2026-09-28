@@ -112,7 +112,21 @@ def _write_state(slug: str, state: dict[str, Any]) -> None:
 def _derive_run_status(state: dict[str, Any], cached: Optional[str]) -> str:
     """Best-effort status derived from state.json content, falling back
     to the in-memory cache (e.g. "running") when the file alone can't
-    tell us (a running agent hasn't written anything new yet)."""
+    tell us (a running agent hasn't written anything new yet).
+
+    IMPORTANT: "running"/"starting" from the cache must win over
+    whatever's on disk. state.json's `pending_gate` for the *previous*
+    gate is still sitting there the entire time the current turn is
+    in flight (the agent only clears/rewrites it once this turn
+    finishes) -- so checking pending_gate first made every in-progress
+    turn report as "waiting_approval" the whole time it was running.
+    That let the dashboard re-enable Approve/Revise mid-turn, so a
+    second click (or an auto-retry) would hit the real "already
+    mid-turn" 400 guard in respond_to_requirement -- confusing/looks
+    like repeated errors even though nothing was actually broken.
+    """
+    if cached in ("running", "starting"):
+        return cached
     stories = state.get("stories", {})
     if any(s.get("pending_gate") for s in stories.values()):
         return "waiting_approval"

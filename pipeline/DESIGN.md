@@ -285,12 +285,12 @@ Proposed new files under `.cursor/rules/`:
 
 ### 9.3 Pipeline state (resumable across sessions)
 
-`<repo>/.pipeline/<requirement-slug>/state.json` tracks, per story:
-current stage, gate pass/fail history, branch name, artifact paths.
-It's identical content duplicated into every affected repo (see
-decision #2, amended, in §10). Lets a pipeline run pause after any gate
-and resume later (new chat session) without re-deriving state from
-scratch.
+`codegraph/pipeline/<requirement-slug>/state.json` — **one canonical
+file, not duplicated** (see §10.2b) — tracks, per story: current stage,
+gate pass/fail history, branch name, artifact paths. Lets a pipeline
+run pause after any gate and resume later (new chat session, possibly
+days later) without re-deriving state from scratch. To resume: read
+this one file first, it tells you exactly where every story stands.
 
 ### 9.4 Folder layout
 
@@ -310,16 +310,18 @@ code-graph-wsp/                           (workspace root)
     skills/
       requirement-pipeline/
         SKILL.md                (new — orchestrates all 7 stages)
-  codegraph/                               (repo: only the pipeline's
-    pipeline/                              own design doc lives here)
+  codegraph/                               (repo)
+    pipeline/
       DESIGN.md                 (this file — meta, not a run output)
+      <requirement-slug>/
+        state.json                        [canonical — one copy, §10.2b]
   shop-api/                                (repo: story branch)
     .pipeline/
       <requirement-slug>/
+        state-ref.json                    (breadcrumb -> codegraph's state.json)
         requirement.md          (shared — duplicated, same content
                                   as every other affected repo's copy)
         stories.md               [GATE 1] (shared — duplicated)
-        state.json                        (shared — duplicated)
         design.md                                    [GATE 2]
         critique.md                                    [GATE 3]
         traceability.md                                [GATE 4]
@@ -330,10 +332,11 @@ code-graph-wsp/                           (workspace root)
         ...same shape, own copy of shared files + own per-repo docs...
 ```
 
-Each repo's `.pipeline/<slug>/` folder is committed on that repo's own
-story branch, so it travels with the PR and merges alongside the code
-it documents — self-contained, no cross-repo reference needed to
-understand a single repo's PR.
+Each repo's `.pipeline/<slug>/` folder (minus `state.json`) is committed
+on that repo's own story branch, so it travels with the PR and merges
+alongside the code it documents. `state.json` itself is committed to
+`codegraph/master` directly (it's not repo-specific, there's no "PR" for
+it to travel with) — see §10.2b and §9.3 for how to resume a run from it.
 
 ---
 
@@ -381,6 +384,39 @@ every affected repo**, not split or referenced remotely; `design.md`,
 `critique.md`, `traceability.md`, `qa-checklist.md` are per-repo and
 only exist in that one repo. `codegraph/pipeline/` now holds only this
 design doc — no run folders.
+
+### 10.2b Amendment: `state.json` centralized in `codegraph` (single copy)
+
+Refined §10.2a. Prompted by thinking through multi-developer approval
+(each repo potentially owned by a different developer): duplicating
+`state.json` identically into every affected repo only stays consistent
+if one person updates every copy in the same sitting. Once different
+people update gates for their own repo asynchronously, the copies will
+silently drift with nothing to reconcile them — a real structural risk,
+not hypothetical.
+
+**Fix:** `state.json` now lives in exactly **one place**:
+`codegraph/pipeline/<requirement-slug>/state.json`. No per-repo copies.
+Git (on `codegraph`) is the only source of truth and the only
+reconciliation mechanism — there is nothing to drift because there is
+only one file.
+
+`requirement.md` and `stories.md` remain duplicated per affected repo
+(per §10.2a) — they're read-only reference material once Gate 1 passes,
+so drift risk is low and the convenience of not needing two repos open
+to read them is worth keeping. `design.md`/`critique.md`/
+`traceability.md`/`qa-checklist.md` remain per-repo only, unchanged.
+
+Each affected repo additionally gets a small breadcrumb,
+`<repo>/.pipeline/<slug>/state-ref.json`, pointing back to the canonical
+`state.json` location — so opening a single repo is still enough to
+find where the authoritative state lives, without duplicating it.
+
+**Current scope note:** this assumes a single developer/session drives
+a run end-to-end for now. Multi-developer ownership (different people
+approving different repos' gates independently, with real identity
+attached to each approval) is a real, separate design question,
+explicitly deferred — not yet decided or built.
 3. **Wave concurrency — true parallel subagent `Task` calls.**
    Independent stories within a wave are dispatched as separate
    parallel subagent tasks (one per story), not run one-at-a-time.

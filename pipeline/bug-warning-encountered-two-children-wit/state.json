@@ -10,7 +10,8 @@
     "Gate 2 approved for shop-web; Gate 3: branch pipeline/bug-warning-encountered-two-children-wit/shop-web; npm test on unfixed code → 2 bug-condition fails (category object / empty list) + 22 preservation/existing pass; no Stage-3 source edits.",
     "Gate 3 approved; Gate 4: ProductList.jsx uses category name string for key/active/setCategory; npm test 24/24; PR https://github.com/techfxs/shop-web/pull/5.",
     "Gate 4 approved; Gate 5: QA checklist posted on PR #5; pending acceptance before merge.",
-    "Gate 5 approved; squash-merged shop-web#5 → cea9fc9. shop-web story done; shop-api Gate 1 still pending for uniform chip counts."
+    "Gate 5 approved; squash-merged shop-web#5 → cea9fc9. shop-web story done; shop-api Gate 1 still pending for uniform chip counts.",
+    "Gate 1 approved for shop-api; Gate 2 root cause: GET /api/categories count subquery is uncorrelated COUNT(*) over all products; fix with GROUP BY category COUNT(*); fence server.js SQL + tests."
   ],
   "stories": {
     "shop-web": {
@@ -28,9 +29,9 @@
       "merge_commit": "cea9fc97c2566ebd5e6f7e3b523b82a5e8896695"
     },
     "shop-api": {
-      "stage": "1-analysis",
+      "stage": "2-rootcause",
       "gates": {
-        "1_analysis": null,
+        "1_analysis": "approved",
         "2_rootcause": null,
         "3_repro": null,
         "4_fix": null,
@@ -39,9 +40,9 @@
       "branch": null,
       "pr_url": null,
       "pending_gate": {
-        "gate": "1_analysis",
-        "presented_at": "2026-09-28T23:30:22Z",
-        "summary": "Analysis for shop-api: GET /api/categories returns {name,count} but count is (SELECT COUNT(*) FROM products) for every row, so every chip shows the catalogue total (8). Scope fence: fix the categories SQL in server.js so count is per-category. Paired shop-web story covers the [object Object] key/filter bug."
+        "gate": "2_rootcause",
+        "presented_at": "2026-09-28T23:39:30Z",
+        "summary": "Root cause for shop-api: GET /api/categories uses (SELECT COUNT(*) FROM products) with no per-category filter, so every chip count equals the catalogue total (8). Proposed fix (fence: server.js categories SQL only): SELECT category AS name, COUNT(*) AS count … GROUP BY category ORDER BY category. Response schema unchanged. shop-web filter/key story already merged."
       }
     }
   }

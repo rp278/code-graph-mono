@@ -6,24 +6,25 @@
     "Started via dashboard (Cursor SDK, local runtime) at 2026-09-28T20:08:52.725368+00:00.",
     "Stage 1 complete (headless): grounded against live codegraph (serializeProduct/initDb/products/GET|POST|PUT /api/products/ProductCard/ProductDetail) + post-JFT and post-clearance-removal source. Affected repos: shop-api, shop-web. Reverses is_just_for_today/Just For Today end-to-end; leaves category badges and is_on_sale DROP migration untouched. Presenting Gate 1 for shop-api.",
     "Gate 1 (1_stories) approved for shop-api. Advanced shop-api to Stage 2; presenting Gate 2 (design). shop-web Gate 1 still pending.",
-    "Gate 2 (2_plan) approved for shop-api. Implemented on pipeline/remove-just-for-today-flag-changes/shop-api, live-verified (fresh seed + migrate DROP COLUMN for JFT and is_on_sale + POST/PUT ignore stray JFT + restart), opened PR #4, presenting Gate 3."
+    "Gate 2 (2_plan) approved for shop-api. Implemented on pipeline/remove-just-for-today-flag-changes/shop-api, live-verified (fresh seed + migrate DROP COLUMN for JFT and is_on_sale + POST/PUT ignore stray JFT + restart), opened PR #4, presenting Gate 3.",
+    "Gate 3 (3_impl) approved for shop-api. Traceability matrix 6/6 verified, posted on PR #4, presenting Gate 4."
   ],
   "stories": {
     "shop-api": {
-      "stage": "4-critique",
+      "stage": "5-traceability",
       "gates": {
         "1_stories": "approved",
         "2_plan": "approved",
-        "3_impl": null,
+        "3_impl": "approved",
         "4_traceability": null,
         "5_qa": null
       },
       "branch": "pipeline/remove-just-for-today-flag-changes/shop-api",
       "pr_url": "https://github.com/techfxs/shop-api/pull/4",
       "pending_gate": {
-        "gate": "3_impl",
-        "presented_at": "2026-09-28T20:16:00Z",
-        "summary": "shop-api implementation on PR https://github.com/techfxs/shop-api/pull/4: removed is_just_for_today from CREATE TABLE, seed, schemas, serializeProduct (helper deleted), and POST/PUT write paths; added one-time DROP COLUMN for legacy DBs; kept is_on_sale DROP. Live-verified fresh (8 products, no JFT key; POST with stray is_just_for_today:true → 201 without field) and migrate (pre-DB with both JFT+sale columns → both dropped; PUT ignores stray JFT; restart clean). Critique at .pipeline/remove-just-for-today-flag-changes/critique.md."
+        "gate": "4_traceability",
+        "presented_at": "2026-09-28T20:19:00Z",
+        "summary": "shop-api traceability matrix 6/6 Verified (GET list/detail omit is_just_for_today; POST/PUT ignore stray field; schemas/serialize/seed/ADD-backfill removed; is_on_sale DROP preserved; legacy DROP COLUMN). Posted on https://github.com/techfxs/shop-api/pull/4. Full matrix in .pipeline/remove-just-for-today-flag-changes/traceability.md."
       }
     },
     "shop-web": {

@@ -1,0 +1,45 @@
+{
+  "requirement": "implement a new flag \"Just For You\" . flag comes frombackend",
+  "slug": "implement-a-new-flag-just-for-you-flag-c",
+  "agent_id": "agent-f7c635e0-29e8-4d31-a79e-55e236adc3ae",
+  "notes": [
+    "Started via dashboard (Cursor SDK, local runtime) at 2026-09-28T11:15:28.703807+00:00.",
+    "Stage 1 complete (headless): grounded against live codegraph + post-clearance-badge source. Affected repos: shop-api, shop-web. Proposed field is_just_for_you; seeded products Aurora Desk Lamp + Pixel Mechanical Keyboard; ProductCard + ProductDetail scope; independent of existing is_on_sale/Clearance."
+  ],
+  "stories": {
+    "shop-api": {
+      "stage": "1-analysis",
+      "gates": {
+        "1_stories": null,
+        "2_plan": null,
+        "3_impl": null,
+        "4_traceability": null,
+        "5_qa": null
+      },
+      "branch": null,
+      "pr_url": null,
+      "pending_gate": {
+        "gate": "1_stories",
+        "presented_at": "2026-09-28T11:17:30Z",
+        "summary": "shop-api story: add boolean is_just_for_you on the product resource (GET list/detail, POST/PUT persist with default false when omitted), seed Aurora Desk Lamp and Pixel Mechanical Keyboard as true, leave is_on_sale/Clearance untouched. Full EARS in shop-api/.pipeline/implement-a-new-flag-just-for-you-flag-c/stories.md (shared with shop-web)."
+      }
+    },
+    "shop-web": {
+      "stage": "1-analysis",
+      "gates": {
+        "1_stories": null,
+        "2_plan": null,
+        "3_impl": null,
+        "4_traceability": null,
+        "5_qa": null
+      },
+      "branch": null,
+      "pr_url": null,
+      "pending_gate": {
+        "gate": "1_stories",
+        "presented_at": "2026-09-28T11:17:30Z",
+        "summary": "shop-web story: when is_just_for_you is true, render a distinct \"Just For You\" badge on ProductCard and ProductDetail without overlapping category or Clearance badges; omit the badge when false/absent; leave loading/error handling unchanged. Full EARS in shop-web/.pipeline/implement-a-new-flag-just-for-you-flag-c/stories.md (shared with shop-api)."
+      }
+    }
+  }
+}

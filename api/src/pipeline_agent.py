@@ -400,7 +400,12 @@ def respond_to_requirement(slug: str, message: str) -> dict[str, Any]:
     from cursor_sdk import Agent, AgentOptions
 
     agent = Agent.resume(
-        agent_id, AgentOptions(api_key=api_key, local=_local_agent_options())
+        agent_id,
+        AgentOptions(
+            api_key=api_key,
+            model=_pipeline_model(),
+            local=_local_agent_options(),
+        ),
     )
 
     with _runs_lock:

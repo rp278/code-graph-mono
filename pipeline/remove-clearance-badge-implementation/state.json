@@ -7,24 +7,25 @@
     "Stage 1 complete (headless): grounded against live codegraph (serializeProduct/initDb/ProductCard/ProductDetail) + post-clearance-badge and post-just-for-today source. Affected repos: shop-api, shop-web. Reverses is_on_sale/Clearance end-to-end; leaves is_just_for_today/Just For Today untouched. Presenting Gate 1 for shop-api.",
     "Gate 1 (1_stories) approved for shop-api. Advanced shop-api to Stage 2; presenting Gate 2 (design). shop-web Gate 1 still pending.",
     "Gate 2 (2_plan) approved for shop-api. Implemented on pipeline/remove-clearance-badge-implementation/shop-api, live-verified (fresh DROP-free seed + migrate DROP COLUMN + POST ignore stray is_on_sale + PUT/restart JFT), opened PR #3, presenting Gate 3.",
-    "Gate 3 (3_impl) approved for shop-api. Traceability matrix 6/6 verified, posted on PR #3, presenting Gate 4."
+    "Gate 3 (3_impl) approved for shop-api. Traceability matrix 6/6 verified, posted on PR #3, presenting Gate 4.",
+    "Gate 4 (4_traceability) approved for shop-api. QA checklist 9 steps prepared and posted on PR #3, presenting Gate 5."
   ],
   "stories": {
     "shop-api": {
-      "stage": "5-traceability",
+      "stage": "6-qa",
       "gates": {
         "1_stories": "approved",
         "2_plan": "approved",
         "3_impl": "approved",
-        "4_traceability": null,
+        "4_traceability": "approved",
         "5_qa": null
       },
       "branch": "pipeline/remove-clearance-badge-implementation/shop-api",
       "pr_url": "https://github.com/techfxs/shop-api/pull/3",
       "pending_gate": {
-        "gate": "4_traceability",
-        "presented_at": "2026-09-28T19:59:04Z",
-        "summary": "Sign off shop-api traceability: all 6 EARS clauses mapped and live-verified (GET list/detail omit is_on_sale; POST/PUT ignore stray key; schemas/serialize/seed/migrations cleaned; is_just_for_today unchanged; DROP COLUMN on pre-existing DBs). Matrix: shop-api/.pipeline/remove-clearance-badge-implementation/traceability.md (also on PR #3)."
+        "gate": "5_qa",
+        "presented_at": "2026-09-28T20:01:12Z",
+        "summary": "Accept shop-api QA checklist (9 executable steps): fresh DB has no is_on_sale and correct JFT pair; POST ignores stray is_on_sale; migrated DB DROP COLUMN + preserved JFT; PUT/restart survival. Known gap: no test framework. Checklist: shop-api/.pipeline/remove-clearance-badge-implementation/qa-checklist.md (also on PR #3). After acceptance this story merges."
       }
     },
     "shop-web": {

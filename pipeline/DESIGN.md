@@ -120,9 +120,11 @@ Story: shop-web — Wishlist UI
   THE SYSTEM SHALL call shop-api's wishlist endpoint and show a confirmation
 ```
 
-**Output artifact:** `pipeline/<requirement-slug>/stories.md` —
+**Output artifact:** `<repo>/.pipeline/<requirement-slug>/stories.md` —
 requirement text, graph-query evidence used, and the full list of
-per-repo EARS stories.
+per-repo EARS stories. This file (and `requirement.md`, `state.json`)
+is **shared/cross-repo content, duplicated identically into every
+affected repo** — see decision #2 (amended) in §10.
 
 **GATE 1:** Present `stories.md` to the user. Proceed only on explicit
 approval. If the user edits/rejects scope, revise and re-present —
@@ -144,7 +146,7 @@ Per approved story (can happen in parallel across independent stories):
    architecture questions (matches your established preference this
    session).
 
-**Output artifact:** `pipeline/<requirement-slug>/<repo>/design.md`.
+**Output artifact:** `<repo>/.pipeline/<requirement-slug>/design.md`.
 
 **GATE 2:** User approves the plan (after questions are answered).
 Implementation does not start on a story until its own plan is
@@ -190,7 +192,7 @@ merge only happens after Stage 7's gate.
 3. Optionally invoke the `bugbot` and/or `security-review` subagents
    for an independent second opinion on the diff.
 
-**Output artifact:** `pipeline/<requirement-slug>/<repo>/critique.md`
+**Output artifact:** `<repo>/.pipeline/<requirement-slug>/critique.md`
 — findings + what (if anything) was revised as a result before
 presenting for approval.
 
@@ -217,7 +219,7 @@ Any clause not fully verified blocks the gate — it goes back to Stage
 3, not forward with a caveat.
 
 **Output artifact:**
-`pipeline/<requirement-slug>/<repo>/traceability.md`.
+`<repo>/.pipeline/<requirement-slug>/traceability.md`.
 
 **GATE 4:** User signs off the traceability matrix.
 
@@ -239,7 +241,7 @@ can run to confirm the behavior, independent of reading the code.
 ```
 
 **Output artifact:**
-`pipeline/<requirement-slug>/<repo>/qa-checklist.md`.
+`<repo>/.pipeline/<requirement-slug>/qa-checklist.md`.
 
 **GATE 5 (final):** Checklist accepted → story marked `done` in the
 pipeline state file.
@@ -283,17 +285,19 @@ Proposed new files under `.cursor/rules/`:
 
 ### 9.3 Pipeline state (resumable across sessions)
 
-`pipeline/<requirement-slug>/state.json` tracks, per story: current
-stage, gate pass/fail history, branch name, artifact paths. Lets a
-pipeline run pause after any gate and resume later (new chat session)
-without re-deriving state from scratch.
+`<repo>/.pipeline/<requirement-slug>/state.json` tracks, per story:
+current stage, gate pass/fail history, branch name, artifact paths.
+It's identical content duplicated into every affected repo (see
+decision #2, amended, in §10). Lets a pipeline run pause after any gate
+and resume later (new chat session) without re-deriving state from
+scratch.
 
 ### 9.4 Folder layout
 
 Rules and the orchestrating skill live at the workspace root (they span
-all 4 repos). Per-run artifacts live inside `codegraph`, per decision #2
-in §10, since the pipeline is already built on top of `codegraph/api`'s
-graph queries:
+all 4 repos) — that part is unchanged. **Per-run artifacts live inside
+each affected repo's own hidden `.pipeline/` folder**, per decision #2
+(amended) in §10 — not inside `codegraph`:
 
 ```
 code-graph-wsp/                           (workspace root)
@@ -306,21 +310,30 @@ code-graph-wsp/                           (workspace root)
     skills/
       requirement-pipeline/
         SKILL.md                (new — orchestrates all 7 stages)
-  codegraph/                               (repo: pipeline artifacts live here)
-    pipeline/
-      DESIGN.md                 (this file)
+  codegraph/                               (repo: only the pipeline's
+    pipeline/                              own design doc lives here)
+      DESIGN.md                 (this file — meta, not a run output)
+  shop-api/                                (repo: story branch)
+    .pipeline/
       <requirement-slug>/
-        requirement.md          (original prompt + graph evidence)
-        stories.md                                                    [GATE 1]
-        state.json
-        shop-api/
-          design.md                                                   [GATE 2]
-          critique.md                                                  [GATE 3]
-          traceability.md                                              [GATE 4]
-          qa-checklist.md                                              [GATE 5]
-        shop-web/
-          ...same shape...
+        requirement.md          (shared — duplicated, same content
+                                  as every other affected repo's copy)
+        stories.md               [GATE 1] (shared — duplicated)
+        state.json                        (shared — duplicated)
+        design.md                                    [GATE 2]
+        critique.md                                    [GATE 3]
+        traceability.md                                [GATE 4]
+        qa-checklist.md                                [GATE 5]
+  shop-web/                                (repo: story branch)
+    .pipeline/
+      <requirement-slug>/
+        ...same shape, own copy of shared files + own per-repo docs...
 ```
+
+Each repo's `.pipeline/<slug>/` folder is committed on that repo's own
+story branch, so it travels with the PR and merges alongside the code
+it documents — self-contained, no cross-repo reference needed to
+understand a single repo's PR.
 
 ---
 
@@ -349,10 +362,25 @@ now-superseded rule 5 previously in `pipeline-gates.mdc`). This was
 removed: PRs are opened for visibility only, and no gate depends on any
 GitHub-side PR state (open/reviewed/approved/checks). Only the chat
 approval matters for advancing past a gate.
-2. **Artifact location — inside the `codegraph` repo.**
-   `pipeline/<requirement-slug>/...` is committed to `codegraph`,
-   versioned alongside the graph tooling it's built on top of (it
-   already depends on `codegraph/api` for Stage 1's graph queries).
+2. **Artifact location — inside each affected repo's own hidden
+   `.pipeline/` folder** (revised — see §10.2a). Originally these lived
+   inside `codegraph`; reversed because workflow **output** for a
+   repo's change belongs with that repo, not a third repo. The
+   pipeline's own meta files (this design doc, the workspace-level
+   `.cursor/rules/*` and `.cursor/skills/*`) still live at the
+   workspace root / in `codegraph` — only **run output** moved.
+
+### 10.2a Amendment: artifact location moved out of `codegraph`
+
+Reversed from the original decision #2 above. Per-run artifacts now
+live at `<repo>/.pipeline/<requirement-slug>/...` inside every repo a
+story touches, committed on that story's own branch (so they travel
+with its PR). `requirement.md`, `stories.md`, and `state.json` are
+**cross-repo/shared content — duplicated with identical content into
+every affected repo**, not split or referenced remotely; `design.md`,
+`critique.md`, `traceability.md`, `qa-checklist.md` are per-repo and
+only exist in that one repo. `codegraph/pipeline/` now holds only this
+design doc — no run folders.
 3. **Wave concurrency — true parallel subagent `Task` calls.**
    Independent stories within a wave are dispatched as separate
    parallel subagent tasks (one per story), not run one-at-a-time.

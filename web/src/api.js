@@ -35,6 +35,15 @@ export const api = {
   chat: (question, repoId) =>
     request('/api/chat', { method: 'POST', body: { question, repo_id: repoId } }),
   query: (cypher, params = {}) => request('/api/query', { method: 'POST', body: { cypher, params } }),
+  listRequirements: () => request('/api/requirements'),
+  getRequirement: (slug) => request(`/api/requirements/${encodeURIComponent(slug)}`),
+  startRequirement: (requirement) =>
+    request('/api/requirements', { method: 'POST', body: { requirement } }),
+  respondToRequirement: (slug, message) =>
+    request(`/api/requirements/${encodeURIComponent(slug)}/respond`, {
+      method: 'POST',
+      body: { message },
+    }),
 };
 
 export const API_BASE = BASE;

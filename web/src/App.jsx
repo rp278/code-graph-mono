@@ -6,6 +6,7 @@ import Header from './components/Header';
 import Sidebar from './components/Sidebar';
 import GraphView from './components/GraphView';
 import ChatView from './components/ChatView';
+import RequirementsView from './components/RequirementsView';
 
 export default function App() {
   const [repos, setRepos] = useState([]);
@@ -217,6 +218,12 @@ export default function App() {
         >
           Ask AI
         </button>
+        <button
+          className={tab === 'requirements' ? 'tab active' : 'tab'}
+          onClick={() => setTab('requirements')}
+        >
+          Requirements
+        </button>
       </nav>
 
       {reposError && (
@@ -270,12 +277,14 @@ export default function App() {
             )}
           </div>
         </div>
-      ) : (
+      ) : tab === 'chat' ? (
         <ChatView
           repoId={selectedRepoId}
           repos={repos}
           onJumpToNode={jumpToNode}
         />
+      ) : (
+        <RequirementsView />
       )}
     </div>
   );

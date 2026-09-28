@@ -22,6 +22,8 @@ from neo4j import GraphDatabase
 from pydantic import BaseModel
 from dotenv import load_dotenv
 
+from . import pipeline_agent
+
 BASE_DIR = Path(__file__).resolve().parent.parent  # api/
 load_dotenv(BASE_DIR / ".env")  # optional: NEO4J_*, OPENAI_*, ANTHROPIC_* live here
 REPOS_FILE = Path(os.environ.get("CODEGRAPH_REPOS", BASE_DIR / "repos.json"))
@@ -106,6 +108,14 @@ class RebuildIn(BaseModel):
 class ChatIn(BaseModel):
     question: str
     repo_id: Optional[str] = None
+
+
+class RequirementIn(BaseModel):
+    requirement: str
+
+
+class RequirementRespondIn(BaseModel):
+    message: str
 
 
 # ---------------------------------------------------------------- repos
@@ -495,3 +505,49 @@ def chat(body: ChatIn) -> dict[str, Any]:
         ),
         "context": context,
     }
+
+
+# ---------------------------------------------------------------- requirement pipeline (SDK-driven)
+
+@app.get("/api/requirements", dependencies=[auth])
+def list_requirements() -> list[dict[str, Any]]:
+    """One row per requirement-pipeline run (reads codegraph/pipeline/*/state.json)."""
+    return pipeline_agent.list_requirements()
+
+
+@app.get("/api/requirements/{slug}", dependencies=[auth])
+def get_requirement(slug: str) -> dict[str, Any]:
+    try:
+        return pipeline_agent.get_requirement(slug)
+    except pipeline_agent.PipelineAgentError as e:
+        raise HTTPException(404, str(e))
+
+
+@app.post("/api/requirements", status_code=201, dependencies=[auth])
+def start_requirement(body: RequirementIn) -> dict[str, Any]:
+    """Start a new pipeline run via the Cursor SDK (local runtime).
+
+    Fires the agent in a background thread and returns immediately with
+    the new slug; poll GET /api/requirements/{slug} for progress. The
+    agent runs headlessly (see pipeline-gates.mdc "Headless mode") and
+    will pause at each gate — resume it via the /respond endpoint below.
+    """
+    try:
+        return pipeline_agent.start_requirement(body.requirement)
+    except pipeline_agent.PipelineAgentError as e:
+        raise HTTPException(400, str(e))
+
+
+@app.post("/api/requirements/{slug}/respond", dependencies=[auth])
+def respond_to_requirement(slug: str, body: RequirementRespondIn) -> dict[str, Any]:
+    """Resume a paused agent with an approval/revision/update message.
+
+    `message` is free text, same as typing a reply in chat would be,
+    e.g. "gate 3_impl for shop-api: approved", "gate 1_stories for
+    shop-web: revise — also cover ProductDetail", or a requirement
+    change ("requirement changed: rename the field to is_on_sale").
+    """
+    try:
+        return pipeline_agent.respond_to_requirement(slug, body.message)
+    except pipeline_agent.PipelineAgentError as e:
+        raise HTTPException(400, str(e))

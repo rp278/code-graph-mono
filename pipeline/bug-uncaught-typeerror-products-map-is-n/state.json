@@ -9,25 +9,23 @@
     "Gate 1 approved; Gate 2 root cause: restore bare-array response in shop-api GET /api/products (schema + return); reject client-side unwrap / keep-wrap paths.",
     "Gate 2 approved; Gate 3: branch pipeline/bug-uncaught-typeerror-products-map-is-n/shop-api; npm test on unfixed code → 5 bug-condition fails (wrapped object) + 7 preservation passes; no Stage-3 source edits.",
     "Gate 3 approved; Gate 4: restored array schema+return in server.js; npm test 12/12 pass; PR https://github.com/techfxs/shop-api/pull/5.",
-    "Gate 4 approved; Gate 5: QA checklist posted on PR #5; pending acceptance before merge."
+    "Gate 4 approved; Gate 5: QA checklist posted on PR #5; pending acceptance before merge.",
+    "Gate 5 approved; squash-merged shop-api#5 → 0b13855. Pipeline run complete."
   ],
   "stories": {
     "shop-api": {
-      "stage": "5-qa",
+      "stage": "done",
       "gates": {
         "1_analysis": "approved",
         "2_rootcause": "approved",
         "3_repro": "approved",
         "4_fix": "approved",
-        "5_qa": null
+        "5_qa": "approved"
       },
       "branch": "pipeline/bug-uncaught-typeerror-products-map-is-n/shop-api",
       "pr_url": "https://github.com/techfxs/shop-api/pull/5",
-      "pending_gate": {
-        "gate": "5_qa",
-        "presented_at": "2026-09-28T23:20:00.000000+00:00",
-        "summary": "QA checklist for shop-api products.map fix: re-verify GET /api/products is a bare array and Home//products no longer throw; then category/search/empty list, categories, product by id/404, POST create, npm test 12/12, and shop-web against the fixed API. Checklist is in shop-api/.pipeline/bug-uncaught-typeerror-products-map-is-n/qa-checklist.md and commented on https://github.com/techfxs/shop-api/pull/5. Approve to merge, or revise."
-      }
+      "merge_status": "merged",
+      "merge_commit": "0b13855fbbc18ec2912b42a5687dca70909b3647"
     }
   }
 }

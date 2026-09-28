@@ -1,0 +1,21 @@
+name: Rebuild codeGraph
+
+# Runs whenever a commit lands on master — which is exactly what a merged
+# PR looks like from GitHub's perspective. A change to the extractor
+# itself (this repo) should re-run against the graphed repos too, since
+# the extraction logic is what changed.
+on:
+  push:
+    branches: [master]
+
+jobs:
+  rebuild:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Trigger codegraph rebuild
+        run: |
+          curl -sf -X POST \
+            -H "Authorization: Bearer ${{ secrets.CODEGRAPH_API_TOKEN }}" \
+            -H "Content-Type: application/json" \
+            -d '{"repo_id":"all"}' \
+            http://165.22.141.139/api/graph/rebuild

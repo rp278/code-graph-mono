@@ -1,0 +1,40 @@
+{
+  "requirement": "remove \"Just For Today\" flag changes.",
+  "slug": "remove-just-for-today-flag-changes",
+  "agent_id": "agent-6a86223e-a1a7-494a-bacf-7199915ba0f3",
+  "notes": [
+    "Started via dashboard (Cursor SDK, local runtime) at 2026-09-28T20:08:52.725368+00:00.",
+    "Stage 1 complete (headless): grounded against live codegraph (serializeProduct/initDb/products/GET|POST|PUT /api/products/ProductCard/ProductDetail) + post-JFT and post-clearance-removal source. Affected repos: shop-api, shop-web. Reverses is_just_for_today/Just For Today end-to-end; leaves category badges and is_on_sale DROP migration untouched. Presenting Gate 1 for shop-api."
+  ],
+  "stories": {
+    "shop-api": {
+      "stage": "1-analysis",
+      "gates": {
+        "1_stories": null,
+        "2_plan": null,
+        "3_impl": null,
+        "4_traceability": null,
+        "5_qa": null
+      },
+      "branch": null,
+      "pr_url": null,
+      "pending_gate": {
+        "gate": "1_stories",
+        "presented_at": "2026-09-28T20:12:00Z",
+        "summary": "shop-api story: remove is_just_for_today end-to-end from the product resource (GET list/detail omit the field; POST/PUT ignore stray is_just_for_today rather than reject; drop the field from schemas, serializeProduct, seed inserts, and ADD-COLUMN/backfill in db.js). Leave the existing is_on_sale DROP COLUMN migration and all non-JFT columns unchanged. Pre-existing DBs with the column must still serve correct responses without leaking is_just_for_today (drop vs leave-unused deferred to design). shop-web story is drafted in the same stories.md but Gate 1 for shop-web is not requested yet."
+      }
+    },
+    "shop-web": {
+      "stage": "1-analysis",
+      "gates": {
+        "1_stories": null,
+        "2_plan": null,
+        "3_impl": null,
+        "4_traceability": null,
+        "5_qa": null
+      },
+      "branch": null,
+      "pr_url": null
+    }
+  }
+}

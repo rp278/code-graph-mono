@@ -8,25 +8,23 @@
     "Gate 1 (1_stories) approved for shop-api. Advanced shop-api to Stage 2; presenting Gate 2 (design). shop-web Gate 1 still pending.",
     "Gate 2 (2_plan) approved for shop-api. Implemented on pipeline/remove-clearance-badge-implementation/shop-api, live-verified (fresh DROP-free seed + migrate DROP COLUMN + POST ignore stray is_on_sale + PUT/restart JFT), opened PR #3, presenting Gate 3.",
     "Gate 3 (3_impl) approved for shop-api. Traceability matrix 6/6 verified, posted on PR #3, presenting Gate 4.",
-    "Gate 4 (4_traceability) approved for shop-api. QA checklist 9 steps prepared and posted on PR #3, presenting Gate 5."
+    "Gate 4 (4_traceability) approved for shop-api. QA checklist 9 steps prepared and posted on PR #3, presenting Gate 5.",
+    "Gate 5 (5_qa) approved for shop-api. Squash-merged PR #3 -> fabda7c. Presenting Gate 1 for shop-web."
   ],
   "stories": {
     "shop-api": {
-      "stage": "6-qa",
+      "stage": "done",
       "gates": {
         "1_stories": "approved",
         "2_plan": "approved",
         "3_impl": "approved",
         "4_traceability": "approved",
-        "5_qa": null
+        "5_qa": "approved"
       },
       "branch": "pipeline/remove-clearance-badge-implementation/shop-api",
       "pr_url": "https://github.com/techfxs/shop-api/pull/3",
-      "pending_gate": {
-        "gate": "5_qa",
-        "presented_at": "2026-09-28T20:01:12Z",
-        "summary": "Accept shop-api QA checklist (9 executable steps): fresh DB has no is_on_sale and correct JFT pair; POST ignores stray is_on_sale; migrated DB DROP COLUMN + preserved JFT; PUT/restart survival. Known gap: no test framework. Checklist: shop-api/.pipeline/remove-clearance-badge-implementation/qa-checklist.md (also on PR #3). After acceptance this story merges."
-      }
+      "merge_status": "merged",
+      "merge_commit": "fabda7c"
     },
     "shop-web": {
       "stage": "1-analysis",
@@ -38,7 +36,12 @@
         "5_qa": null
       },
       "branch": null,
-      "pr_url": null
+      "pr_url": null,
+      "pending_gate": {
+        "gate": "1_stories",
+        "presented_at": "2026-09-28T20:01:46Z",
+        "summary": "Approve EARS story for shop-web: remove Clearance badge from ProductCard and ProductDetail (no badge-sale / product.is_on_sale); delete .badge-sale CSS rules; leave category and Just For Today badges and loading/error states unchanged. shop-api story already merged (PR #3). Full text: shop-web/.pipeline/remove-clearance-badge-implementation/stories.md"
+      }
     }
   }
 }

@@ -9,7 +9,8 @@
     "Gate 2 (2_plan) approved for shop-api. Implemented on pipeline/remove-just-for-today-flag-changes/shop-api, live-verified (fresh seed + migrate DROP COLUMN for JFT and is_on_sale + POST/PUT ignore stray JFT + restart), opened PR #4, presenting Gate 3.",
     "Gate 3 (3_impl) approved for shop-api. Traceability matrix 6/6 verified, posted on PR #4, presenting Gate 4.",
     "Gate 4 (4_traceability) approved for shop-api. QA checklist prepared and posted on PR #4, presenting Gate 5.",
-    "Gate 5 (5_qa) approved for shop-api. Squash-merged PR #4 -> 630d797. Presenting Gate 1 for shop-web."
+    "Gate 5 (5_qa) approved for shop-api. Squash-merged PR #4 -> 630d797. Presenting Gate 1 for shop-web.",
+    "Gate 1 (1_stories) approved for shop-web. Advanced to Stage 2; presenting Gate 2 (design)."
   ],
   "stories": {
     "shop-api": {
@@ -27,9 +28,9 @@
       "merge_commit": "630d797"
     },
     "shop-web": {
-      "stage": "1-analysis",
+      "stage": "2-plan",
       "gates": {
-        "1_stories": null,
+        "1_stories": "approved",
         "2_plan": null,
         "3_impl": null,
         "4_traceability": null,
@@ -38,9 +39,9 @@
       "branch": null,
       "pr_url": null,
       "pending_gate": {
-        "gate": "1_stories",
-        "presented_at": "2026-09-28T20:24:00Z",
-        "summary": "shop-web story (already in stories.md): remove the Just For Today badge from ProductCard (Home/ProductList) and ProductDetail — no badge-just-for-today / product.is_just_for_today rendering; remove unused .badge-just-for-today CSS rules from index.css; leave category badges and loading/error states unchanged. shop-api story is already merged (PR #4 → 630d797)."
+        "gate": "2_plan",
+        "presented_at": "2026-09-28T20:25:00Z",
+        "summary": "shop-web design: remove is_just_for_today conditionals from ProductCard.jsx and ProductDetail.jsx; delete the three .badge-just-for-today CSS rules from index.css; leave category badges and loading/error paths unchanged. No api.js changes. Depends on merged shop-api PR #4 (630d797). Branch pipeline/remove-just-for-today-flag-changes/shop-web created after Gate 2 approval. Design at shop-web/.pipeline/remove-just-for-today-flag-changes/design.md."
       }
     }
   }

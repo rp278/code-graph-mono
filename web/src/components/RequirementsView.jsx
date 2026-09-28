@@ -57,14 +57,22 @@ function GateTrack({ gates }) {
 const STAGE_STEPS = [...GATE_ORDER, 'merge'];
 const STAGE_STEP_LABELS = { ...GATE_LABELS, merge: 'Merged' };
 
-function computeStageSteps(story, runStatus) {
+function storyHasEarlierApprovals(story) {
+  const pending = story?.pending_gate?.gate;
+  if (!pending) return false;
+  const idx = GATE_ORDER.indexOf(pending);
+  if (idx <= 0) return false;
+  return GATE_ORDER.slice(0, idx).some((g) => story?.gates?.[g] === 'approved');
+}
+
+function computeStageSteps(story, runStatus, { isWorking = false, justApprovedGate = null } = {}) {
   const gates = story?.gates || {};
   const steps = GATE_ORDER.map((g) => {
     const v = gates[g];
     let status = 'upcoming';
     if (v === 'approved') status = 'done';
-    else if (v === 'pending_reapproval') status = 'waiting';
-    else if (story?.pending_gate?.gate === g) status = 'waiting';
+    else if (v === 'pending_reapproval' && runStatus === 'waiting_approval') status = 'waiting';
+    else if (story?.pending_gate?.gate === g && runStatus === 'waiting_approval') status = 'waiting';
     return { key: g, label: GATE_LABELS[g], status };
   });
 
@@ -75,20 +83,37 @@ function computeStageSteps(story, runStatus) {
     status: merged ? 'done' : 'upcoming',
   });
 
-  // Mark exactly one step "current": the first non-done, non-waiting step,
-  // but only while the agent is actually running/starting a turn right
-  // now — otherwise (idle/error) there's nothing actively happening, so
-  // leave it "upcoming" rather than implying live progress.
-  if (runStatus === 'running' || runStatus === 'starting') {
-    const idx = steps.findIndex((s) => s.status === 'upcoming');
-    if (idx !== -1) steps[idx].status = 'current';
+  // Only skip-ahead past a pending_gate if it is the gate the user just
+  // approved. If the agent has already written the *next* gate (e.g.
+  // 5_qa) while the turn is still wrapping up, that new pending_gate
+  // is NOT approved yet — spinning Merged and hiding the QA window
+  // was the snap-back bug.
+  const agentBusy = runStatus === 'running' || runStatus === 'starting';
+  if (agentBusy && isWorking) {
+    const pendingKey = story?.pending_gate?.gate;
+    if (pendingKey && pendingKey === justApprovedGate) {
+      const pendingIdx = steps.findIndex((s) => s.key === pendingKey);
+      if (pendingIdx !== -1) steps[pendingIdx].status = 'done';
+      const idx = steps.findIndex((s) => s.status === 'upcoming');
+      if (idx !== -1) steps[idx].status = 'current';
+    } else if (pendingKey) {
+      if (justApprovedGate) {
+        const approvedIdx = steps.findIndex((s) => s.key === justApprovedGate);
+        if (approvedIdx !== -1) steps[approvedIdx].status = 'done';
+      }
+      const pendingIdx = steps.findIndex((s) => s.key === pendingKey);
+      if (pendingIdx !== -1) steps[pendingIdx].status = 'current';
+    } else {
+      const idx = steps.findIndex((s) => s.status === 'upcoming');
+      if (idx !== -1) steps[idx].status = 'current';
+    }
   }
 
   return steps;
 }
 
-function StageBar({ story, runStatus }) {
-  const steps = computeStageSteps(story, runStatus);
+function StageBar({ story, runStatus, isWorking, justApprovedGate }) {
+  const steps = computeStageSteps(story, runStatus, { isWorking, justApprovedGate });
   return (
     <div className="stage-bar">
       {steps.map((step, i) => (
@@ -156,21 +181,26 @@ function RequirementList({ items, selectedSlug, onSelect, loading, error, onRetr
   );
 }
 
-function StoryCard({ repo, story, runStatus }) {
+function StoryCard({ repo, story, runStatus, isWorking, justApprovedGate }) {
   return (
     <div className="story-card">
       <div className="story-card-header">
         <span className="story-repo mono">{repo}</span>
         <span className="story-stage muted">{story.stage}</span>
       </div>
-      <StageBar story={story} runStatus={runStatus} />
+      <StageBar
+        story={story}
+        runStatus={runStatus}
+        isWorking={isWorking}
+        justApprovedGate={justApprovedGate}
+      />
       {story.pr_url && (
         <a className="story-pr-link" href={story.pr_url} target="_blank" rel="noreferrer">
           View PR ↗
         </a>
       )}
       {story.merge_status === 'merged' && <span className="merged-badge">Merged</span>}
-      {story.pending_gate && (
+      {story.pending_gate && !isWorking && runStatus === 'waiting_approval' && (
         <div className="pending-gate-box">
           <div className="pending-gate-title">
             Waiting: Gate {story.pending_gate.gate} — {GATE_LABELS[story.pending_gate.gate] || story.pending_gate.gate}
@@ -189,6 +219,12 @@ function RequirementDetail({ slug, onRespond, responding }) {
   const [error, setError] = useState(null);
   const [revisionDrafts, setRevisionDrafts] = useState({});
   const [updateText, setUpdateText] = useState('');
+  // Optimistic hide of the pending-approval panel from the moment the
+  // user clicks Approve/Revise until this turn actually finishes and
+  // a *new* gate is waiting. Without this, the old gate stays visible
+  // (disk `pending_gate` isn't rewritten until the turn ends).
+  const [dismissedPending, setDismissedPending] = useState(false);
+  const dismissedGateRef = useRef(null);
 
   const load = useCallback(async () => {
     try {
@@ -201,19 +237,59 @@ function RequirementDetail({ slug, onRespond, responding }) {
   }, [slug]);
 
   useEffect(() => {
+    setDismissedPending(false);
+    dismissedGateRef.current = null;
     load();
   }, [load]);
 
+  const isBusy =
+    responding || detail?.run_status === 'running' || detail?.run_status === 'starting';
+
+  // Re-show the panel only once the gate the user just acted on is
+  // gone from disk (replaced by the next gate, or cleared because the
+  // story finished). Do not re-show just because run_status briefly
+  // still says waiting_approval — that's the old gate.
+  useEffect(() => {
+    if (!dismissedPending || isBusy || !detail) return;
+    const dismissed = dismissedGateRef.current;
+    if (!dismissed) {
+      setDismissedPending(false);
+      return;
+    }
+    if (dismissed.type === 'update') {
+      setDismissedPending(false);
+      dismissedGateRef.current = null;
+      return;
+    }
+    const stillThere = Object.entries(detail.state.stories || {}).some(([repo, s]) => {
+      const g = s.pending_gate;
+      return (
+        g &&
+        dismissed.repo === repo &&
+        dismissed.gate === g.gate &&
+        dismissed.presentedAt === g.presented_at
+      );
+    });
+    if (!stillThere) {
+      setDismissedPending(false);
+      dismissedGateRef.current = null;
+    }
+  }, [dismissedPending, isBusy, detail]);
+
   // Poll while the agent is actively working so the UI reflects progress
-  // without the user needing to refresh. Fast (1.5s) while actively
-  // running so the live-status ticker feels responsive; a turn can
-  // involve many tool calls in quick succession.
+  // without the user needing to refresh. Also poll after the user has
+  // dismissed the pending panel, so we notice the next gate as soon as
+  // this turn finishes.
   useEffect(() => {
     if (!detail) return undefined;
-    if (detail.run_status !== 'running' && detail.run_status !== 'starting') return undefined;
+    const active =
+      detail.run_status === 'running' ||
+      detail.run_status === 'starting' ||
+      dismissedPending;
+    if (!active) return undefined;
     const id = setInterval(load, 1500);
     return () => clearInterval(id);
-  }, [detail, load]);
+  }, [detail, load, dismissedPending]);
 
   if (error) {
     return (
@@ -236,30 +312,61 @@ function RequirementDetail({ slug, onRespond, responding }) {
 
   const stories = Object.entries(detail.state.stories || {});
   const pendingEntries = stories.filter(([, s]) => s.pending_gate);
-  // `responding` only covers the brief POST round-trip that kicks off a
-  // turn (the actual work runs in a background thread server-side and
-  // can take minutes) -- so gate buttons must ALSO stay disabled for
-  // the whole time run_status is "running"/"starting", or a second
-  // click mid-turn hits the backend's "already mid-turn" guard.
-  const isBusy =
-    responding || detail.run_status === 'running' || detail.run_status === 'starting';
+  const dismissed = dismissedGateRef.current;
+  const dismissedRepo = dismissed?.type === 'gate' ? dismissed.repo : null;
+  const visiblePending = pendingEntries.filter(([repo, s]) => {
+    if (!dismissedPending || !dismissed) return true;
+    if (dismissed.type === 'update') return false;
+    return !(
+      dismissed.repo === repo &&
+      dismissed.gate === s.pending_gate.gate &&
+      dismissed.presentedAt === s.pending_gate.presented_at
+    );
+  });
+  // Only show the Approve/Revise form when the agent has actually
+  // paused and this gate is ready — including the first Stories gate.
+  // During the initial analysis turn (and any later in-flight turn)
+  // `pending_gate` can already exist on disk for another story, or
+  // not exist yet at all; showing the panel then looks like a request
+  // for approval before the story is ready.
+  const showPendingPanel =
+    detail.run_status === 'waiting_approval' && !isBusy && visiblePending.length > 0;
 
-  const approve = (repo, gate) => {
-    onRespond(slug, `gate ${gate} for ${repo}: approved`, load);
+  const approve = async (repo, gate) => {
+    const presentedAt = stories.find(([r]) => r === repo)?.[1]?.pending_gate?.presented_at;
+    dismissedGateRef.current = { type: 'gate', repo, gate, presentedAt: presentedAt || '' };
+    setDismissedPending(true);
+    const ok = await onRespond(slug, `gate ${gate} for ${repo}: approved`, load);
+    if (!ok) {
+      dismissedGateRef.current = null;
+      setDismissedPending(false);
+    }
   };
-  const revise = (repo, gate) => {
+  const revise = async (repo, gate) => {
     const feedback = (revisionDrafts[`${repo}:${gate}`] || '').trim();
-    onRespond(
+    const presentedAt = stories.find(([r]) => r === repo)?.[1]?.pending_gate?.presented_at;
+    dismissedGateRef.current = { type: 'gate', repo, gate, presentedAt: presentedAt || '' };
+    setDismissedPending(true);
+    const ok = await onRespond(
       slug,
       `gate ${gate} for ${repo}: revise${feedback ? ' — ' + feedback : ''}`,
       load
     );
+    if (!ok) {
+      dismissedGateRef.current = null;
+      setDismissedPending(false);
+    }
   };
-  const sendUpdate = () => {
+  const sendUpdate = async () => {
     const text = updateText.trim();
     if (!text) return;
-    onRespond(slug, `requirement changed: ${text}`, load);
-    setUpdateText('');
+    dismissedGateRef.current = { type: 'update' };
+    setDismissedPending(true);
+    const ok = await onRespond(slug, `requirement changed: ${text}`, load);
+    if (!ok) {
+      dismissedGateRef.current = null;
+      setDismissedPending(false);
+    } else setUpdateText('');
   };
 
   return (
@@ -280,14 +387,31 @@ function RequirementDetail({ slug, onRespond, responding }) {
 
       <div className="story-cards">
         {stories.map(([repo, story]) => (
-          <StoryCard key={repo} repo={repo} story={story} runStatus={detail.run_status} />
+          <StoryCard
+            key={repo}
+            repo={repo}
+            story={story}
+            runStatus={detail.run_status}
+            isWorking={
+              (dismissedPending && dismissedRepo === repo) ||
+              (isBusy &&
+                !dismissedPending &&
+                story.stage !== 'done' &&
+                (!story.pending_gate || storyHasEarlierApprovals(story)))
+            }
+            justApprovedGate={
+              dismissedPending && dismissed?.type === 'gate' && dismissed.repo === repo
+                ? dismissed.gate
+                : null
+            }
+          />
         ))}
       </div>
 
-      {pendingEntries.length > 0 && (
+      {showPendingPanel && (
         <div className="gate-actions">
           <h3>Pending approval</h3>
-          {pendingEntries.map(([repo, s]) => {
+          {visiblePending.map(([repo, s]) => {
             const gate = s.pending_gate.gate;
             const key = `${repo}:${gate}`;
             return (
@@ -330,7 +454,9 @@ function RequirementDetail({ slug, onRespond, responding }) {
         </div>
       )}
 
-      {(detail.run_status === 'waiting_approval' || detail.run_status === 'done') && (
+      {(detail.run_status === 'waiting_approval' || detail.run_status === 'done') &&
+        !isBusy &&
+        !dismissedPending && (
         <div className="update-requirement-box">
           <h3>Update this requirement</h3>
           <p className="muted">
@@ -429,9 +555,11 @@ export default function RequirementsView() {
     try {
       await api.respondToRequirement(slug, message);
       await loadList();
-      if (onDone) setTimeout(onDone, 300);
+      if (onDone) await onDone();
+      return true;
     } catch (e) {
       setStartError(e.message);
+      return false;
     } finally {
       setResponding(false);
     }

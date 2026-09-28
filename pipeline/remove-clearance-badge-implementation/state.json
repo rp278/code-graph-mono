@@ -6,24 +6,25 @@
     "Started via dashboard (Cursor SDK, local runtime) at 2026-09-28T19:50:14.133014+00:00.",
     "Stage 1 complete (headless): grounded against live codegraph (serializeProduct/initDb/ProductCard/ProductDetail) + post-clearance-badge and post-just-for-today source. Affected repos: shop-api, shop-web. Reverses is_on_sale/Clearance end-to-end; leaves is_just_for_today/Just For Today untouched. Presenting Gate 1 for shop-api.",
     "Gate 1 (1_stories) approved for shop-api. Advanced shop-api to Stage 2; presenting Gate 2 (design). shop-web Gate 1 still pending.",
-    "Gate 2 (2_plan) approved for shop-api. Implemented on pipeline/remove-clearance-badge-implementation/shop-api, live-verified (fresh DROP-free seed + migrate DROP COLUMN + POST ignore stray is_on_sale + PUT/restart JFT), opened PR #3, presenting Gate 3."
+    "Gate 2 (2_plan) approved for shop-api. Implemented on pipeline/remove-clearance-badge-implementation/shop-api, live-verified (fresh DROP-free seed + migrate DROP COLUMN + POST ignore stray is_on_sale + PUT/restart JFT), opened PR #3, presenting Gate 3.",
+    "Gate 3 (3_impl) approved for shop-api. Traceability matrix 6/6 verified, posted on PR #3, presenting Gate 4."
   ],
   "stories": {
     "shop-api": {
-      "stage": "4-critique",
+      "stage": "5-traceability",
       "gates": {
         "1_stories": "approved",
         "2_plan": "approved",
-        "3_impl": null,
+        "3_impl": "approved",
         "4_traceability": null,
         "5_qa": null
       },
       "branch": "pipeline/remove-clearance-badge-implementation/shop-api",
       "pr_url": "https://github.com/techfxs/shop-api/pull/3",
       "pending_gate": {
-        "gate": "3_impl",
-        "presented_at": "2026-09-28T19:55:49Z",
-        "summary": "Approve shop-api implementation removing is_on_sale: db.js drops column on existing DBs and omits it from CREATE/seed; server.js strips schemas/serialize/POST/PUT. Live-verified fresh + migrated DBs (no is_on_sale on wire; JFT pair intact; stray is_on_sale ignored; PUT/restart preserves JFT). Critique: shop-api/.pipeline/remove-clearance-badge-implementation/critique.md. PR (informational): https://github.com/techfxs/shop-api/pull/3"
+        "gate": "4_traceability",
+        "presented_at": "2026-09-28T19:59:04Z",
+        "summary": "Sign off shop-api traceability: all 6 EARS clauses mapped and live-verified (GET list/detail omit is_on_sale; POST/PUT ignore stray key; schemas/serialize/seed/migrations cleaned; is_just_for_today unchanged; DROP COLUMN on pre-existing DBs). Matrix: shop-api/.pipeline/remove-clearance-badge-implementation/traceability.md (also on PR #3)."
       }
     },
     "shop-web": {

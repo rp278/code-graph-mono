@@ -1,0 +1,40 @@
+{
+  "requirement": "Remove clearance badge implementation.",
+  "slug": "remove-clearance-badge-implementation",
+  "agent_id": "agent-29a65c10-089a-4f5a-891d-b42629041842",
+  "notes": [
+    "Started via dashboard (Cursor SDK, local runtime) at 2026-09-28T19:50:14.133014+00:00.",
+    "Stage 1 complete (headless): grounded against live codegraph (serializeProduct/initDb/ProductCard/ProductDetail) + post-clearance-badge and post-just-for-today source. Affected repos: shop-api, shop-web. Reverses is_on_sale/Clearance end-to-end; leaves is_just_for_today/Just For Today untouched. Presenting Gate 1 for shop-api."
+  ],
+  "stories": {
+    "shop-api": {
+      "stage": "1-analysis",
+      "gates": {
+        "1_stories": null,
+        "2_plan": null,
+        "3_impl": null,
+        "4_traceability": null,
+        "5_qa": null
+      },
+      "branch": null,
+      "pr_url": null,
+      "pending_gate": {
+        "gate": "1_stories",
+        "presented_at": "2026-09-28T19:51:05Z",
+        "summary": "Approve EARS stories for removing the clearance badge stack. shop-api story: strip is_on_sale from GET list/detail responses, POST/PUT handling, JSON schemas, serializeProduct, seed data, and on-sale migration/backfill; leave is_just_for_today fully intact; pre-existing DBs must still serve products with no is_on_sale in the API. shop-web story (same stories.md, Gate 1 presented next after this approval): remove Clearance badge from ProductCard and ProductDetail plus .badge-sale CSS; keep category and Just For Today badges. Full text: shop-api/.pipeline/remove-clearance-badge-implementation/stories.md"
+      }
+    },
+    "shop-web": {
+      "stage": "1-analysis",
+      "gates": {
+        "1_stories": null,
+        "2_plan": null,
+        "3_impl": null,
+        "4_traceability": null,
+        "5_qa": null
+      },
+      "branch": null,
+      "pr_url": null
+    }
+  }
+}

@@ -1,0 +1,46 @@
+{
+  "requirement": "Bug: Warning: Encountered two children with the same key, `[object Object]`. Keys sho\n\nError / stack trace:\nWarning: Encountered two children with the same key, `[object Object]`. Keys should be unique so that components maintain their identity across updates.\nGET http://127.0.0.1:3001/api/products?category=%5Bobject+Object%5D\n\nExtra details:\nClicking a category chip shows no products. The chips all show (8) products",
+  "slug": "bug-warning-encountered-two-children-wit",
+  "kind": "bug",
+  "agent_id": "agent-087cd852-ad41-4582-b28d-2245986e98a3",
+  "notes": [
+    "Started via dashboard (Cursor SDK, local runtime) at 2026-09-28T23:28:47.249137+00:00.",
+    "Gate 1: located dual fault — shop-web ProductList uses category objects as React keys and filter state ([object Object] / empty results); shop-api GET /api/categories count subquery returns catalogue total for every chip (all show 8)."
+  ],
+  "stories": {
+    "shop-web": {
+      "stage": "1-analysis",
+      "gates": {
+        "1_analysis": null,
+        "2_rootcause": null,
+        "3_repro": null,
+        "4_fix": null,
+        "5_qa": null
+      },
+      "branch": null,
+      "pr_url": null,
+      "pending_gate": {
+        "gate": "1_analysis",
+        "presented_at": "2026-09-28T23:30:22Z",
+        "summary": "Analysis for shop-web: ProductList builds chips from GET /api/categories objects {name,count} but uses the whole object as React key and as category filter state, producing duplicate keys `[object Object]` and GET /api/products?category=%5Bobject+Object%5D (empty results). Scope fence: ProductList.jsx key/active/setCategory should use category name strings. Paired shop-api story covers the uniform (8) counts."
+      }
+    },
+    "shop-api": {
+      "stage": "1-analysis",
+      "gates": {
+        "1_analysis": null,
+        "2_rootcause": null,
+        "3_repro": null,
+        "4_fix": null,
+        "5_qa": null
+      },
+      "branch": null,
+      "pr_url": null,
+      "pending_gate": {
+        "gate": "1_analysis",
+        "presented_at": "2026-09-28T23:30:22Z",
+        "summary": "Analysis for shop-api: GET /api/categories returns {name,count} but count is (SELECT COUNT(*) FROM products) for every row, so every chip shows the catalogue total (8). Scope fence: fix the categories SQL in server.js so count is per-category. Paired shop-web story covers the [object Object] key/filter bug."
+      }
+    }
+  }
+}

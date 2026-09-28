@@ -291,9 +291,14 @@ def rebuild_graph(body: RebuildIn) -> dict[str, Any]:
     env.setdefault("NEO4J_URI", NEO4J_URI)
     env.setdefault("NEO4J_USER", NEO4J_USER)
     env.setdefault("NEO4J_PASSWORD", NEO4J_PASSWORD)
+    # Prefer graphify's own venv interpreter (has neo4j/tree-sitter/etc.
+    # installed) over a bare "python3", which resolves to the system
+    # interpreter and lacks those deps.
+    venv_python = GRAPHIFY_DIR / ".venv" / "bin" / "python3"
+    python_bin = str(venv_python) if venv_python.exists() else "python3"
     try:
         proc = subprocess.run(
-            ["python3", "-m", "graphify.codegraph",
+            [python_bin, "-m", "graphify.codegraph",
              "--repos", str(tmp), "--push"],
             capture_output=True, text=True, timeout=600, env=env,
             cwd=str(GRAPHIFY_DIR),

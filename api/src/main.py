@@ -11,6 +11,7 @@ import json
 import os
 import re
 import subprocess
+import threading
 import urllib.request
 from pathlib import Path
 from typing import Any, Optional
@@ -260,21 +261,25 @@ def _git_pull(path: Path) -> str:
     return f"{path}: {proc.stdout.strip() or 'up to date'}"
 
 
-@app.post("/api/graph/rebuild", dependencies=[auth])
-def rebuild_graph(body: RebuildIn) -> dict[str, Any]:
-    """Rebuild the knowledge graph with our Graphify fork and reload Neo4j.
+# Single-flight guard: only one rebuild subprocess runs at a time (two
+# concurrent `git pull`/extraction runs on the same checkout can race —
+# e.g. git's own index.lock — and there's no benefit to running them
+# in parallel anyway, since every run already rebuilds *all* repos).
+_rebuild_lock = threading.Lock()
+# If a rebuild request arrives while one is already in flight, it must
+# not be dropped (that would silently lose whatever merge triggered it
+# if no later merge ever re-triggers a rebuild) and must not run
+# concurrently either. Instead it flags that one more full run is
+# needed, which the in-flight request performs itself right after it
+# finishes — guaranteeing every trigger is eventually reflected while
+# capping the total work to at most 2 sequential runs per burst.
+_rerun_lock = threading.Lock()
+_rerun_needed = False
 
-    Pulls the latest commit for every registered repo (and the graphify
-    fork itself) before extracting, so a rebuild triggered right after a
-    merge actually reflects that merge instead of a stale on-disk
-    checkout. Delegates to the fork's CLI (`python3 -m graphify.codegraph
-    --repos <json> --push`). Rebuilds *all* registered repos so
-    cross-repo edges (e.g. frontend fetches -> backend endpoints) resolve
-    correctly.
-    """
-    repos = load_repos()
-    if body.repo_id != "all" and not any(r["id"] == body.repo_id for r in repos):
-        raise HTTPException(404, f"unknown repo '{body.repo_id}'")
+
+def _do_one_rebuild(repos: list[dict[str, Any]]) -> dict[str, Any]:
+    """One full pull + extract + push cycle. See rebuild_graph for the
+    single-flight/coalescing wrapper that calls this."""
     entry = GRAPHIFY_DIR / "graphify" / "codegraph.py"
     if not entry.exists():
         raise HTTPException(
@@ -311,6 +316,58 @@ def rebuild_graph(body: RebuildIn) -> dict[str, Any]:
         raise HTTPException(500, f"rebuild failed: {proc.stderr[-2000:]}")
     return {"status": "ok", "repos": [r["id"] for r in repos],
             "pulled": pull_log, "log": proc.stdout[-2000:]}
+
+
+@app.post("/api/graph/rebuild", dependencies=[auth])
+def rebuild_graph(body: RebuildIn) -> dict[str, Any]:
+    """Rebuild the knowledge graph with our Graphify fork and reload Neo4j.
+
+    Pulls the latest commit for every registered repo (and the graphify
+    fork itself) before extracting, so a rebuild triggered right after a
+    merge actually reflects that merge instead of a stale on-disk
+    checkout. Delegates to the fork's CLI (`python3 -m graphify.codegraph
+    --repos <json> --push`). Rebuilds *all* registered repos so
+    cross-repo edges (e.g. frontend fetches -> backend endpoints) resolve
+    correctly.
+
+    Single-flight: if a rebuild is already running when this is called,
+    this request does not start a second one. It instead flags that the
+    in-flight run should repeat once more after it finishes, so this
+    trigger's changes are still guaranteed to be picked up (a fresh
+    `git pull` happens on every run) without ever running two rebuilds
+    concurrently.
+    """
+    global _rerun_needed
+    repos = load_repos()
+    if body.repo_id != "all" and not any(r["id"] == body.repo_id for r in repos):
+        raise HTTPException(404, f"unknown repo '{body.repo_id}'")
+
+    if not _rebuild_lock.acquire(blocking=False):
+        with _rerun_lock:
+            _rerun_needed = True
+        return {
+            "status": "queued",
+            "detail": (
+                "a rebuild was already running; a follow-up run will "
+                "start right after it finishes and will pick up this "
+                "change"
+            ),
+        }
+
+    try:
+        result = _do_one_rebuild(repos)
+        while True:
+            with _rerun_lock:
+                pending = _rerun_needed
+                _rerun_needed = False
+            if not pending:
+                break
+            # Something else was queued while we ran — coalesce it into
+            # exactly one more full run instead of dropping it.
+            result = _do_one_rebuild(repos)
+        return result
+    finally:
+        _rebuild_lock.release()
 
 
 # ---------------------------------------------------------------- chat

@@ -9,25 +9,23 @@
     "Gate 1 approved for shop-web; Gate 2 root cause: ProductList key/active/setCategory must use category name strings; api.js coercion and fetchCategories flatten rejected; shop-api count remains a separate story.",
     "Gate 2 approved for shop-web; Gate 3: branch pipeline/bug-warning-encountered-two-children-wit/shop-web; npm test on unfixed code → 2 bug-condition fails (category object / empty list) + 22 preservation/existing pass; no Stage-3 source edits.",
     "Gate 3 approved; Gate 4: ProductList.jsx uses category name string for key/active/setCategory; npm test 24/24; PR https://github.com/techfxs/shop-web/pull/5.",
-    "Gate 4 approved; Gate 5: QA checklist posted on PR #5; pending acceptance before merge."
+    "Gate 4 approved; Gate 5: QA checklist posted on PR #5; pending acceptance before merge.",
+    "Gate 5 approved; squash-merged shop-web#5 → cea9fc9. shop-web story done; shop-api Gate 1 still pending for uniform chip counts."
   ],
   "stories": {
     "shop-web": {
-      "stage": "5-qa",
+      "stage": "done",
       "gates": {
         "1_analysis": "approved",
         "2_rootcause": "approved",
         "3_repro": "approved",
         "4_fix": "approved",
-        "5_qa": null
+        "5_qa": "approved"
       },
       "branch": "pipeline/bug-warning-encountered-two-children-wit/shop-web",
       "pr_url": "https://github.com/techfxs/shop-web/pull/5",
-      "pending_gate": {
-        "gate": "5_qa",
-        "presented_at": "2026-09-28T23:37:25Z",
-        "summary": "QA checklist for shop-web PR #5: re-check /products for no [object Object] key warning; chip click must request ?category=<name> and show matching products; All + search + Home/detail preservation; npm test 24/24. Chip count totals (all showing 8) explicitly out of this PR (shop-api story). Checklist posted as PR comment."
-      }
+      "merge_status": "merged",
+      "merge_commit": "cea9fc97c2566ebd5e6f7e3b523b82a5e8896695"
     },
     "shop-api": {
       "stage": "1-analysis",

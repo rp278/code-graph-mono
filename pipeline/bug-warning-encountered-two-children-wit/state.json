@@ -7,24 +7,25 @@
     "Started via dashboard (Cursor SDK, local runtime) at 2026-09-28T23:28:47.249137+00:00.",
     "Gate 1: located dual fault — shop-web ProductList uses category objects as React keys and filter state ([object Object] / empty results); shop-api GET /api/categories count subquery returns catalogue total for every chip (all show 8).",
     "Gate 1 approved for shop-web; Gate 2 root cause: ProductList key/active/setCategory must use category name strings; api.js coercion and fetchCategories flatten rejected; shop-api count remains a separate story.",
-    "Gate 2 approved for shop-web; Gate 3: branch pipeline/bug-warning-encountered-two-children-wit/shop-web; npm test on unfixed code → 2 bug-condition fails (category object / empty list) + 22 preservation/existing pass; no Stage-3 source edits."
+    "Gate 2 approved for shop-web; Gate 3: branch pipeline/bug-warning-encountered-two-children-wit/shop-web; npm test on unfixed code → 2 bug-condition fails (category object / empty list) + 22 preservation/existing pass; no Stage-3 source edits.",
+    "Gate 3 approved; Gate 4: ProductList.jsx uses category name string for key/active/setCategory; npm test 24/24; PR https://github.com/techfxs/shop-web/pull/5."
   ],
   "stories": {
     "shop-web": {
-      "stage": "3-repro",
+      "stage": "4-fix",
       "gates": {
         "1_analysis": "approved",
         "2_rootcause": "approved",
-        "3_repro": null,
+        "3_repro": "approved",
         "4_fix": null,
         "5_qa": null
       },
       "branch": "pipeline/bug-warning-encountered-two-children-wit/shop-web",
-      "pr_url": null,
+      "pr_url": "https://github.com/techfxs/shop-web/pull/5",
       "pending_gate": {
-        "gate": "3_repro",
-        "presented_at": "2026-09-28T23:35:30Z",
-        "summary": "Repro for shop-web on branch pipeline/bug-warning-encountered-two-children-wit/shop-web: ProductList.test.jsx encodes C/P — 2 bug-condition tests fail on unfixed code (fetchProducts receives {name,count} instead of \"home\"; filtered grid empty) matching rootcause; 4 new preservation tests + 18 existing pass; React duplicate-key warning observed in stderr; git confirms no non-test source changes."
+        "gate": "4_fix",
+        "presented_at": "2026-09-28T23:36:45Z",
+        "summary": "Fix for shop-web: ProductList chip map derives name = c.name (All stays \"\") for React key, active class, and setCategory; chipLabel unchanged. npm test 24/24 (prior 2 bug-condition failures now pass); lint warnings pre-existing; build ok. Only ProductList.jsx in source fence. PR https://github.com/techfxs/shop-web/pull/5 (informational)."
       }
     },
     "shop-api": {

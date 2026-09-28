@@ -4,13 +4,14 @@
   "agent_id": "agent-77d7f995-99ed-459f-82e5-1190d59553fb",
   "notes": [
     "Started via dashboard (Cursor SDK, local runtime) at 2026-09-28T11:29:27.652053+00:00.",
-    "Stage 1 complete (headless): grounded against live codegraph + post-clearance-badge source. Affected repos: shop-api, shop-web. Proposed field is_just_for_today; seeded products Aurora Desk Lamp + Pixel Mechanical Keyboard; ProductCard + ProductDetail scope; independent of existing is_on_sale/Clearance."
+    "Stage 1 complete (headless): grounded against live codegraph + post-clearance-badge source. Affected repos: shop-api, shop-web. Proposed field is_just_for_today; seeded products Aurora Desk Lamp + Pixel Mechanical Keyboard; ProductCard + ProductDetail scope; independent of existing is_on_sale/Clearance.",
+    "Gate 1 (1_stories) approved for shop-api only. shop-web Gate 1 still pending. Advanced shop-api to Stage 2 and presented Gate 2 (design)."
   ],
   "stories": {
     "shop-api": {
-      "stage": "1-analysis",
+      "stage": "2-plan",
       "gates": {
-        "1_stories": null,
+        "1_stories": "approved",
         "2_plan": null,
         "3_impl": null,
         "4_traceability": null,
@@ -19,9 +20,9 @@
       "branch": null,
       "pr_url": null,
       "pending_gate": {
-        "gate": "1_stories",
-        "presented_at": "2026-09-28T11:31:00Z",
-        "summary": "shop-api story: add boolean is_just_for_today on the product resource (GET list/detail, POST/PUT persist with default false when omitted), seed Aurora Desk Lamp and Pixel Mechanical Keyboard as true, leave is_on_sale/Clearance untouched. Full EARS in shop-api/.pipeline/implement-a-new-flag-just-for-today-flag/stories.md (shared with shop-web)."
+        "gate": "2_plan",
+        "presented_at": "2026-09-28T19:21:00Z",
+        "summary": "shop-api design: add is_just_for_today INTEGER column (CREATE + ALTER migration), seed/backfill Aurora Desk Lamp + Pixel Mechanical Keyboard as true (one-time, gated like is_on_sale), extend productSchema/productBodySchema + serializeProduct coercion, POST/PUT persist with default false. Leaves is_on_sale/Clearance untouched. Full plan in shop-api/.pipeline/implement-a-new-flag-just-for-today-flag/design.md."
       }
     },
     "shop-web": {

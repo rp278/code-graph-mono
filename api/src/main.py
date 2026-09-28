@@ -22,10 +22,13 @@ from neo4j import GraphDatabase
 from pydantic import BaseModel
 from dotenv import load_dotenv
 
-from . import pipeline_agent
-
 BASE_DIR = Path(__file__).resolve().parent.parent  # api/
 load_dotenv(BASE_DIR / ".env")  # optional: NEO4J_*, OPENAI_*, ANTHROPIC_* live here
+
+# Imported after load_dotenv() on purpose: pipeline_agent reads
+# CURSOR_API_KEY from os.environ, and must see the value .env just loaded.
+from . import pipeline_agent  # noqa: E402
+
 REPOS_FILE = Path(os.environ.get("CODEGRAPH_REPOS", BASE_DIR / "repos.json"))
 GRAPHIFY_DIR = Path(os.environ.get("GRAPHIFY_DIR", "/home/hatch/workspace/graphify"))
 

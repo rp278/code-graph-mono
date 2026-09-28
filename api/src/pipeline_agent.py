@@ -40,8 +40,17 @@ WORKSPACE_ROOT = Path(
     os.environ.get("PIPELINE_WORKSPACE_ROOT", str(BASE_DIR.parent.parent.parent))
 )
 
-CURSOR_API_KEY = os.environ.get("CURSOR_API_KEY", "")
-PIPELINE_MODEL = os.environ.get("PIPELINE_MODEL", "auto")
+# Read lazily (not cached at import time): main.py calls load_dotenv()
+# to populate os.environ from .env, and this module must see that value
+# regardless of exactly when it happened to be imported relative to that
+# call. A module-level `CURSOR_API_KEY = os.environ.get(...)` constant
+# would silently freeze at "" if this module is ever imported first.
+def _cursor_api_key() -> str:
+    return os.environ.get("CURSOR_API_KEY", "")
+
+
+def _pipeline_model() -> str:
+    return os.environ.get("PIPELINE_MODEL", "auto")
 
 # Same-process cache of in-flight run status, keyed by slug. Not the
 # source of truth (state.json + agent_id is) — just avoids re-reading
@@ -208,7 +217,8 @@ def _run_turn(slug: str, agent: Any, message: str) -> None:
 
 
 def start_requirement(requirement_text: str) -> dict[str, Any]:
-    if not CURSOR_API_KEY:
+    api_key = _cursor_api_key()
+    if not api_key:
         raise PipelineAgentError(
             "CURSOR_API_KEY is not set in codegraph/api/.env — get one from "
             "https://cursor.com/dashboard/integrations"
@@ -221,8 +231,8 @@ def start_requirement(requirement_text: str) -> dict[str, Any]:
     slug = _unique_slug(_slugify(requirement_text))
 
     agent = Agent.create(
-        api_key=CURSOR_API_KEY,
-        model=PIPELINE_MODEL,
+        api_key=api_key,
+        model=_pipeline_model(),
         local=LocalAgentOptions(cwd=str(WORKSPACE_ROOT)),
     )
     agent_id = agent.agent_id
@@ -252,7 +262,8 @@ def start_requirement(requirement_text: str) -> dict[str, Any]:
 
 
 def respond_to_requirement(slug: str, message: str) -> dict[str, Any]:
-    if not CURSOR_API_KEY:
+    api_key = _cursor_api_key()
+    if not api_key:
         raise PipelineAgentError("CURSOR_API_KEY is not set in codegraph/api/.env")
 
     state = _read_state(slug)
@@ -271,7 +282,7 @@ def respond_to_requirement(slug: str, message: str) -> dict[str, Any]:
 
     from cursor_sdk import Agent, AgentOptions
 
-    agent = Agent.resume(agent_id, AgentOptions(api_key=CURSOR_API_KEY))
+    agent = Agent.resume(agent_id, AgentOptions(api_key=api_key))
 
     with _runs_lock:
         _runs[slug] = {"status": "starting", "error": None}

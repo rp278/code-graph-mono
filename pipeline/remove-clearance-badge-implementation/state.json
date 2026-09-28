@@ -12,7 +12,8 @@
     "Gate 5 (5_qa) approved for shop-api. Squash-merged PR #3 -> fabda7c. Presenting Gate 1 for shop-web.",
     "Gate 1 (1_stories) approved for shop-web. Advanced to Stage 2; presenting Gate 2 (design).",
     "Gate 2 (2_plan) approved for shop-web. Implemented badge UI removal, live Playwright-verified (0 Clearance / 0 .badge-sale; 2 JFT on list; Headphones category only; Aurora category+JFT), opened shop-web PR #3, presenting Gate 3.",
-    "Gate 3 (3_impl) approved for shop-web. Traceability matrix 5/5 verified, posted on PR #3, presenting Gate 4."
+    "Gate 3 (3_impl) approved for shop-web. Traceability matrix 5/5 verified, posted on PR #3, presenting Gate 4.",
+    "Gate 4 (4_traceability) approved for shop-web. QA checklist prepared and posted on PR #3, presenting Gate 5."
   ],
   "stories": {
     "shop-api": {
@@ -30,20 +31,20 @@
       "merge_commit": "fabda7c"
     },
     "shop-web": {
-      "stage": "5-traceability",
+      "stage": "6-qa",
       "gates": {
         "1_stories": "approved",
         "2_plan": "approved",
         "3_impl": "approved",
-        "4_traceability": null,
+        "4_traceability": "approved",
         "5_qa": null
       },
       "branch": "pipeline/remove-clearance-badge-implementation/shop-web",
       "pr_url": "https://github.com/techfxs/shop-web/pull/3",
       "pending_gate": {
-        "gate": "4_traceability",
-        "presented_at": "2026-09-28T20:06:25Z",
-        "summary": "Sign off shop-web traceability: all 5 EARS clauses mapped and verified (ProductCard/ProductDetail have no Clearance; .badge-sale CSS removed; category+JFT unchanged; loading/error untouched). Matrix: shop-web/.pipeline/remove-clearance-badge-implementation/traceability.md (also on PR #3)."
+        "gate": "5_qa",
+        "presented_at": "2026-09-28T20:07:04Z",
+        "summary": "Accept shop-web QA checklist: /products has 0 Clearance and 0 .badge-sale with 2 JFT badges; Headphones detail category only; Aurora category+JFT; loading/error unchanged. Known gap: no frontend test framework. Checklist: shop-web/.pipeline/remove-clearance-badge-implementation/qa-checklist.md (also on PR #3). After acceptance this story merges and the pipeline run completes."
       }
     }
   }

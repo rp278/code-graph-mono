@@ -32,13 +32,23 @@ import threading
 import traceback
 from datetime import datetime, timezone
 from pathlib import Path
-from typing import Any, Optional
+from typing import Any, Mapping, Optional
 
 BASE_DIR = Path(__file__).resolve().parent.parent  # api/
 PIPELINE_DIR = BASE_DIR.parent / "pipeline"  # codegraph/pipeline/
 WORKSPACE_ROOT = Path(
     os.environ.get("PIPELINE_WORKSPACE_ROOT", str(BASE_DIR.parent.parent.parent))
 )
+
+# Local-runtime agents are ephemeral (in-memory only) *unless* a
+# LocalAgentStoreConfig is passed -- and it must be the *same* one on
+# every Agent.create() and Agent.resume() call, or the agent is
+# unrecoverable the moment this process restarts (each restart got a
+# fresh in-memory store with nothing in it -> AgentNotFoundError on
+# every /respond, even though the close-agent bug fix was correct).
+# See cursor_sdk's JsonlLocalAgentStore docstring: "Pass the same
+# instance ... on Agent.create, Agent.resume, and local list/get APIs."
+AGENT_STORE_DIR = BASE_DIR / ".agent-store"
 
 # Read lazily (not cached at import time): main.py calls load_dotenv()
 # to populate os.environ from .env, and this module must see that value
@@ -131,7 +141,7 @@ def list_requirements() -> list[dict[str, Any]]:
         except (json.JSONDecodeError, OSError):
             continue
         with _runs_lock:
-            cached = _runs.get(d.name, {}).get("status")
+            cached = _runs.get(d.name, {})
         out.append(
             {
                 "slug": d.name,
@@ -146,7 +156,8 @@ def list_requirements() -> list[dict[str, Any]]:
                     }
                     for repo, s in state.get("stories", {}).items()
                 },
-                "run_status": _derive_run_status(state, cached),
+                "run_status": _derive_run_status(state, cached.get("status")),
+                "live_status": cached.get("live_status"),
             }
         )
     return out
@@ -161,6 +172,7 @@ def get_requirement(slug: str) -> dict[str, Any]:
         "state": state,
         "run_status": _derive_run_status(state, cached.get("status")),
         "error": cached.get("error"),
+        "live_status": cached.get("live_status"),
     }
 
 
@@ -184,6 +196,61 @@ def _headless_prompt(requirement_text: str, slug: str) -> str:
     )
 
 
+def _tool_arg_hint(args: Any) -> str:
+    """Best-effort one-line detail from a tool call's args (a file path,
+    shell command, search query, ...) for a live-status line. Tool
+    schemas aren't a stable/documented contract, so this is intentionally
+    forgiving -- worst case it just returns "" and we fall back to the
+    tool name alone."""
+    if not isinstance(args, Mapping):
+        return ""
+    for key in ("path", "file_path", "target_file", "command", "query", "pattern", "url"):
+        v = args.get(key)
+        if isinstance(v, str) and v:
+            return v[:80]
+    return ""
+
+
+def _describe_message(msg: Any) -> Optional[str]:
+    """Turn one streamed SDK message into a short human-readable status
+    line, or None if it's not worth surfacing. This is what makes the
+    dashboard's "live status" possible: rather than blocking silently on
+    run.wait() until an entire turn finishes (which can take minutes),
+    _run_turn iterates the run's message stream and stashes the latest
+    description here on every event."""
+    kind = getattr(msg, "type", None)
+    if kind == "thinking":
+        text = (getattr(msg, "text", "") or "").strip().replace("\n", " ")
+        return f"Thinking: {text[:140]}" if text else "Thinking…"
+    if kind == "tool_call":
+        name = getattr(msg, "name", "") or "tool"
+        status = getattr(msg, "status", "")
+        hint = _tool_arg_hint(getattr(msg, "args", None))
+        suffix = f" — {hint}" if hint else ""
+        if status == "completed":
+            return f"Finished `{name}`{suffix}"
+        if status == "error":
+            return f"`{name}` errored{suffix}"
+        return f"Running `{name}`{suffix}"
+    if kind == "assistant":
+        content = getattr(getattr(msg, "message", None), "content", ()) or ()
+        for block in content:
+            text = getattr(block, "text", None)
+            if text and text.strip():
+                return text.strip().replace("\n", " ")[:160]
+        return None
+    if kind == "status":
+        text = (getattr(msg, "message", "") or getattr(msg, "status", "") or "").strip()
+        return text or None
+    return None
+
+
+def _set_live_status(slug: str, text: Optional[str]) -> None:
+    with _runs_lock:
+        _runs.setdefault(slug, {})
+        _runs[slug]["live_status"] = {"text": text, "at": _now()} if text else None
+
+
 def _run_turn(slug: str, agent: Any, message: str) -> None:
     """Run one turn and update the in-memory status cache.
 
@@ -202,8 +269,20 @@ def _run_turn(slug: str, agent: Any, message: str) -> None:
             _runs.setdefault(slug, {})
             _runs[slug]["status"] = "running"
             _runs[slug]["error"] = None
+        _set_live_status(slug, "Starting…")
         run = agent.send(message)
+        # Iterate the stream ourselves (instead of just run.wait()) so the
+        # dashboard has something to show while a turn is in flight --
+        # a single turn can easily take minutes across several tool
+        # calls. run.wait() below is then effectively free: the stream
+        # is already fully drained, so it returns the cached terminal
+        # result instead of making a new blocking RPC.
+        for msg in run.messages():
+            desc = _describe_message(msg)
+            if desc:
+                _set_live_status(slug, desc)
         result = run.wait()
+        _set_live_status(slug, None)
         if getattr(result, "status", None) == "error":
             with _runs_lock:
                 _runs[slug]["status"] = "error"
@@ -218,6 +297,7 @@ def _run_turn(slug: str, agent: Any, message: str) -> None:
             _runs[slug]["status"] = derived
         done = derived == "done"
     except Exception as e:  # noqa: BLE001
+        _set_live_status(slug, None)
         with _runs_lock:
             _runs.setdefault(slug, {})
             _runs[slug]["status"] = "error"
@@ -230,6 +310,29 @@ def _run_turn(slug: str, agent: Any, message: str) -> None:
                 pass
 
 
+def _local_agent_options() -> Any:
+    """Build the LocalAgentOptions used for every create/resume call.
+
+    Must be identical (same cwd, same JSONL store rootDir) every time --
+    a local-runtime agent with no explicit `store` config is held only
+    in this process's memory, so it silently becomes unrecoverable the
+    moment the API process restarts (Ctrl-C, crash, code reload, ...):
+    every subsequent Agent.resume() 404s with AgentNotFoundError even
+    though the agent was never explicitly closed. Pointing `store` at a
+    JsonlLocalAgentStore backed by a directory on disk makes agent
+    metadata (agents/runs/run_events/checkpoints, as .ndjson files)
+    survive process restarts, which is the whole point of persisting
+    `agent_id` in state.json in the first place.
+    """
+    from cursor_sdk import LocalAgentOptions, LocalAgentStoreConfig
+
+    AGENT_STORE_DIR.mkdir(parents=True, exist_ok=True)
+    return LocalAgentOptions(
+        cwd=str(WORKSPACE_ROOT),
+        store=LocalAgentStoreConfig(type="jsonl", root_dir=str(AGENT_STORE_DIR)),
+    )
+
+
 def start_requirement(requirement_text: str) -> dict[str, Any]:
     api_key = _cursor_api_key()
     if not api_key:
@@ -240,14 +343,14 @@ def start_requirement(requirement_text: str) -> dict[str, Any]:
     if not requirement_text.strip():
         raise PipelineAgentError("requirement text is empty")
 
-    from cursor_sdk import Agent, LocalAgentOptions
+    from cursor_sdk import Agent
 
     slug = _unique_slug(_slugify(requirement_text))
 
     agent = Agent.create(
         api_key=api_key,
         model=_pipeline_model(),
-        local=LocalAgentOptions(cwd=str(WORKSPACE_ROOT)),
+        local=_local_agent_options(),
     )
     agent_id = agent.agent_id
 
@@ -296,7 +399,9 @@ def respond_to_requirement(slug: str, message: str) -> dict[str, Any]:
 
     from cursor_sdk import Agent, AgentOptions
 
-    agent = Agent.resume(agent_id, AgentOptions(api_key=api_key))
+    agent = Agent.resume(
+        agent_id, AgentOptions(api_key=api_key, local=_local_agent_options())
+    )
 
     with _runs_lock:
         _runs[slug] = {"status": "starting", "error": None}

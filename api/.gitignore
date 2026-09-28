@@ -3,3 +3,4 @@ __pycache__/
 *.pyc
 .env
 repos.local.json
+.agent-store/

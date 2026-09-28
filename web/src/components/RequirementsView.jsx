@@ -43,6 +43,70 @@ function GateTrack({ gates }) {
   );
 }
 
+// Full-width labeled step bar for the requirement detail view — one step
+// per gate plus a synthetic final "Merged" step. A step is:
+//   done      — gate approved (or, for the Merged step, merge_status
+//               === 'merged')
+//   waiting   — gate has a pending_gate marker, or is pending_reapproval
+//               (a mid-run requirement change reset it) — needs the
+//               user's approve/revise action
+//   current   — the agent is actively working on this step right now
+//               (first not-done, not-waiting step, only while the run's
+//               overall status is starting/running)
+//   upcoming  — hasn't been reached yet
+const STAGE_STEPS = [...GATE_ORDER, 'merge'];
+const STAGE_STEP_LABELS = { ...GATE_LABELS, merge: 'Merged' };
+
+function computeStageSteps(story, runStatus) {
+  const gates = story?.gates || {};
+  const steps = GATE_ORDER.map((g) => {
+    const v = gates[g];
+    let status = 'upcoming';
+    if (v === 'approved') status = 'done';
+    else if (v === 'pending_reapproval') status = 'waiting';
+    else if (story?.pending_gate?.gate === g) status = 'waiting';
+    return { key: g, label: GATE_LABELS[g], status };
+  });
+
+  const merged = story?.merge_status === 'merged';
+  steps.push({
+    key: 'merge',
+    label: 'Merged',
+    status: merged ? 'done' : 'upcoming',
+  });
+
+  // Mark exactly one step "current": the first non-done, non-waiting step,
+  // but only while the agent is actually running/starting a turn right
+  // now — otherwise (idle/error) there's nothing actively happening, so
+  // leave it "upcoming" rather than implying live progress.
+  if (runStatus === 'running' || runStatus === 'starting') {
+    const idx = steps.findIndex((s) => s.status === 'upcoming');
+    if (idx !== -1) steps[idx].status = 'current';
+  }
+
+  return steps;
+}
+
+function StageBar({ story, runStatus }) {
+  const steps = computeStageSteps(story, runStatus);
+  return (
+    <div className="stage-bar">
+      {steps.map((step, i) => (
+        <div className="stage-step" key={step.key}>
+          <div className="stage-step-track">
+            {i > 0 && <span className={`stage-connector ${steps[i - 1].status === 'done' ? 'filled' : ''}`} />}
+            <span className={`stage-node ${step.status}`}>
+              {step.status === 'done' && '✓'}
+              {step.status === 'current' && <span className="spinner" />}
+            </span>
+          </div>
+          <span className={`stage-step-label ${step.status}`}>{step.label}</span>
+        </div>
+      ))}
+    </div>
+  );
+}
+
 function RequirementList({ items, selectedSlug, onSelect, loading, error, onRetry }) {
   return (
     <div className="req-list">
@@ -80,25 +144,26 @@ function RequirementList({ items, selectedSlug, onSelect, loading, error, onRetr
               </span>
             ))}
           </div>
+          {(r.run_status === 'running' || r.run_status === 'starting') && (
+            <div className="live-status-ticker small">
+              <span className="live-status-dot" />
+              {r.live_status?.text || 'Working…'}
+            </div>
+          )}
         </button>
       ))}
     </div>
   );
 }
 
-function StoryCard({ repo, story }) {
+function StoryCard({ repo, story, runStatus }) {
   return (
     <div className="story-card">
       <div className="story-card-header">
         <span className="story-repo mono">{repo}</span>
         <span className="story-stage muted">{story.stage}</span>
       </div>
-      <GateTrack gates={story.gates} />
-      <div className="story-gate-labels muted">
-        {GATE_ORDER.map((g) => (
-          <span key={g}>{GATE_LABELS[g][0]}</span>
-        ))}
-      </div>
+      <StageBar story={story} runStatus={runStatus} />
       {story.pr_url && (
         <a className="story-pr-link" href={story.pr_url} target="_blank" rel="noreferrer">
           View PR ↗
@@ -140,11 +205,13 @@ function RequirementDetail({ slug, onRespond, responding }) {
   }, [load]);
 
   // Poll while the agent is actively working so the UI reflects progress
-  // without the user needing to refresh.
+  // without the user needing to refresh. Fast (1.5s) while actively
+  // running so the live-status ticker feels responsive; a turn can
+  // involve many tool calls in quick succession.
   useEffect(() => {
     if (!detail) return undefined;
     if (detail.run_status !== 'running' && detail.run_status !== 'starting') return undefined;
-    const id = setInterval(load, 4000);
+    const id = setInterval(load, 1500);
     return () => clearInterval(id);
   }, [detail, load]);
 
@@ -194,13 +261,19 @@ function RequirementDetail({ slug, onRespond, responding }) {
         <h2 className="mono">{detail.slug}</h2>
         <StatusPill status={detail.run_status} />
       </div>
+      {(detail.run_status === 'running' || detail.run_status === 'starting') && (
+        <div className="live-status-ticker">
+          <span className="live-status-dot" />
+          {detail.live_status?.text || 'Working…'}
+        </div>
+      )}
       <p className="req-detail-text">{detail.state.requirement}</p>
 
       {detail.error && <div className="banner error">{detail.error}</div>}
 
       <div className="story-cards">
         {stories.map(([repo, story]) => (
-          <StoryCard key={repo} repo={repo} story={story} />
+          <StoryCard key={repo} repo={repo} story={story} runStatus={detail.run_status} />
         ))}
       </div>
 
@@ -323,7 +396,7 @@ export default function RequirementsView() {
   useEffect(() => {
     const anyActive = items.some((r) => r.run_status === 'running' || r.run_status === 'starting');
     if (!anyActive) return undefined;
-    pollRef.current = setInterval(loadList, 5000);
+    pollRef.current = setInterval(loadList, 2000);
     return () => clearInterval(pollRef.current);
   }, [items, loadList]);
 

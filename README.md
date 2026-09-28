@@ -132,4 +132,3 @@ NetworkX + Leiden (graspologic) + tree-sitter + Claude + vis.js. No Neo4j requir
 See [ARCHITECTURE.md](ARCHITECTURE.md) for module responsibilities and how to add a language.
 
 </details>
-<!-- e2e-actions-test-1790581369 -->

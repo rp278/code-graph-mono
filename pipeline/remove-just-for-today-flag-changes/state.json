@@ -11,7 +11,8 @@
     "Gate 4 (4_traceability) approved for shop-api. QA checklist prepared and posted on PR #4, presenting Gate 5.",
     "Gate 5 (5_qa) approved for shop-api. Squash-merged PR #4 -> 630d797. Presenting Gate 1 for shop-web.",
     "Gate 1 (1_stories) approved for shop-web. Advanced to Stage 2; presenting Gate 2 (design).",
-    "Gate 2 (2_plan) approved for shop-web. Implemented badge UI removal, live Playwright-verified (0 JFT text/class on list; Aurora/Pixel/Headphones category only), opened shop-web PR #4, presenting Gate 3."
+    "Gate 2 (2_plan) approved for shop-web. Implemented badge UI removal, live Playwright-verified (0 JFT text/class on list; Aurora/Pixel/Headphones category only), opened shop-web PR #4, presenting Gate 3.",
+    "Gate 3 (3_impl) approved for shop-web. Traceability matrix 5/5 verified, posted on PR #4, presenting Gate 4."
   ],
   "stories": {
     "shop-api": {
@@ -29,20 +30,20 @@
       "merge_commit": "630d797"
     },
     "shop-web": {
-      "stage": "4-critique",
+      "stage": "5-traceability",
       "gates": {
         "1_stories": "approved",
         "2_plan": "approved",
-        "3_impl": null,
+        "3_impl": "approved",
         "4_traceability": null,
         "5_qa": null
       },
       "branch": "pipeline/remove-just-for-today-flag-changes/shop-web",
       "pr_url": "https://github.com/techfxs/shop-web/pull/4",
       "pending_gate": {
-        "gate": "3_impl",
-        "presented_at": "2026-09-28T20:27:00Z",
-        "summary": "shop-web implementation on PR https://github.com/techfxs/shop-web/pull/4: removed is_just_for_today conditionals from ProductCard and ProductDetail; deleted three .badge-just-for-today CSS rules. Playwright against shop-api master + Vite :5174 — /products: 8 cards, 0 Just For Today text/class, category badges only; /products/1 Aurora and /products/6 Pixel category-only; /products/3 Headphones unchanged. Critique on the PR."
+        "gate": "4_traceability",
+        "presented_at": "2026-09-28T20:27:30Z",
+        "summary": "shop-web traceability matrix 5/5 Verified (ProductCard/ProductDetail omit JFT; CSS rules deleted; category badges unchanged; loading/error untouched). Posted on https://github.com/techfxs/shop-web/pull/4. Full matrix in .pipeline/remove-just-for-today-flag-changes/traceability.md."
       }
     }
   }

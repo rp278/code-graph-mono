@@ -13,7 +13,8 @@
     "Gate 1 (1_stories) approved for shop-web. Advanced to Stage 2; presenting Gate 2 (design).",
     "Gate 2 (2_plan) approved for shop-web. Implemented badge UI removal, live Playwright-verified (0 JFT text/class on list; Aurora/Pixel/Headphones category only), opened shop-web PR #4, presenting Gate 3.",
     "Gate 3 (3_impl) approved for shop-web. Traceability matrix 5/5 verified, posted on PR #4, presenting Gate 4.",
-    "Gate 4 (4_traceability) approved for shop-web. QA checklist prepared and posted on PR #4, presenting Gate 5."
+    "Gate 4 (4_traceability) approved for shop-web. QA checklist prepared and posted on PR #4, presenting Gate 5.",
+    "Gate 5 (5_qa) approved for shop-web. Squash-merged shop-web PR #4 -> 555566a. Both stories done; pipeline run complete."
   ],
   "stories": {
     "shop-api": {
@@ -31,21 +32,18 @@
       "merge_commit": "630d797"
     },
     "shop-web": {
-      "stage": "6-qa",
+      "stage": "done",
       "gates": {
         "1_stories": "approved",
         "2_plan": "approved",
         "3_impl": "approved",
         "4_traceability": "approved",
-        "5_qa": null
+        "5_qa": "approved"
       },
       "branch": "pipeline/remove-just-for-today-flag-changes/shop-web",
       "pr_url": "https://github.com/techfxs/shop-web/pull/4",
-      "pending_gate": {
-        "gate": "5_qa",
-        "presented_at": "2026-09-28T20:28:00Z",
-        "summary": "shop-web QA checklist: /products has 0 Just For Today text/class and category badges remain; Aurora/Pixel/Headphones detail are category-only; clearance stays gone; loading/error path unchanged when API is down. Posted on https://github.com/techfxs/shop-web/pull/4. Full checklist in .pipeline/remove-just-for-today-flag-changes/qa-checklist.md."
-      }
+      "merge_status": "merged",
+      "merge_commit": "555566a"
     }
   }
 }

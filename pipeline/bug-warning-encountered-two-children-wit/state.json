@@ -8,24 +8,25 @@
     "Gate 1: located dual fault — shop-web ProductList uses category objects as React keys and filter state ([object Object] / empty results); shop-api GET /api/categories count subquery returns catalogue total for every chip (all show 8).",
     "Gate 1 approved for shop-web; Gate 2 root cause: ProductList key/active/setCategory must use category name strings; api.js coercion and fetchCategories flatten rejected; shop-api count remains a separate story.",
     "Gate 2 approved for shop-web; Gate 3: branch pipeline/bug-warning-encountered-two-children-wit/shop-web; npm test on unfixed code → 2 bug-condition fails (category object / empty list) + 22 preservation/existing pass; no Stage-3 source edits.",
-    "Gate 3 approved; Gate 4: ProductList.jsx uses category name string for key/active/setCategory; npm test 24/24; PR https://github.com/techfxs/shop-web/pull/5."
+    "Gate 3 approved; Gate 4: ProductList.jsx uses category name string for key/active/setCategory; npm test 24/24; PR https://github.com/techfxs/shop-web/pull/5.",
+    "Gate 4 approved; Gate 5: QA checklist posted on PR #5; pending acceptance before merge."
   ],
   "stories": {
     "shop-web": {
-      "stage": "4-fix",
+      "stage": "5-qa",
       "gates": {
         "1_analysis": "approved",
         "2_rootcause": "approved",
         "3_repro": "approved",
-        "4_fix": null,
+        "4_fix": "approved",
         "5_qa": null
       },
       "branch": "pipeline/bug-warning-encountered-two-children-wit/shop-web",
       "pr_url": "https://github.com/techfxs/shop-web/pull/5",
       "pending_gate": {
-        "gate": "4_fix",
-        "presented_at": "2026-09-28T23:36:45Z",
-        "summary": "Fix for shop-web: ProductList chip map derives name = c.name (All stays \"\") for React key, active class, and setCategory; chipLabel unchanged. npm test 24/24 (prior 2 bug-condition failures now pass); lint warnings pre-existing; build ok. Only ProductList.jsx in source fence. PR https://github.com/techfxs/shop-web/pull/5 (informational)."
+        "gate": "5_qa",
+        "presented_at": "2026-09-28T23:37:25Z",
+        "summary": "QA checklist for shop-web PR #5: re-check /products for no [object Object] key warning; chip click must request ?category=<name> and show matching products; All + search + Home/detail preservation; npm test 24/24. Chip count totals (all showing 8) explicitly out of this PR (shop-api story). Checklist posted as PR comment."
       }
     },
     "shop-api": {

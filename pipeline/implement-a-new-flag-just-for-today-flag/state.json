@@ -13,7 +13,8 @@
     "Gate 1 (1_stories) approved for shop-web. Advanced to Stage 2; presenting Gate 2 (design).",
     "Gate 2 (2_plan) approved for shop-web. Implemented badge UI, live browser-verified (2 JFT + 2 Clearance on list; Aurora detail JFT; Headphones Clearance only), opened shop-web PR #2, presenting Gate 3.",
     "Gate 3 (3_impl) approved for shop-web. Traceability matrix 4/4 verified, posted on PR #2, presenting Gate 4.",
-    "Gate 4 (4_traceability) approved for shop-web. QA checklist 7/7 prepared and posted on PR #2, presenting Gate 5."
+    "Gate 4 (4_traceability) approved for shop-web. QA checklist 7/7 prepared and posted on PR #2, presenting Gate 5.",
+    "Gate 5 (5_qa) approved for shop-web. Squash-merged shop-web PR #2 -> c74ceb8. Both stories done; pipeline run complete."
   ],
   "stories": {
     "shop-api": {
@@ -31,21 +32,18 @@
       "merge_commit": "4f980bb"
     },
     "shop-web": {
-      "stage": "6-qa",
+      "stage": "done",
       "gates": {
         "1_stories": "approved",
         "2_plan": "approved",
         "3_impl": "approved",
         "4_traceability": "approved",
-        "5_qa": null
+        "5_qa": "approved"
       },
       "branch": "pipeline/implement-a-new-flag-just-for-today-flag/shop-web",
       "pr_url": "https://github.com/techfxs/shop-web/pull/2",
-      "pending_gate": {
-        "gate": "5_qa",
-        "presented_at": "2026-09-28T19:46:52Z",
-        "summary": "shop-web QA checklist: 7 browser steps covering ProductList JFT+Clearance coexistence, Aurora/Headphones detail, Home reuse of ProductCard, loading/error unchanged. 7/7 already passed live; 3 known non-blocking gaps (narrow viewport, no test framework, dual-flag not seeded). Checklist in shop-web/.pipeline/implement-a-new-flag-just-for-today-flag/qa-checklist.md and on https://github.com/techfxs/shop-web/pull/2."
-      }
+      "merge_status": "merged",
+      "merge_commit": "c74ceb8"
     }
   }
 }

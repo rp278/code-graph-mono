@@ -239,13 +239,38 @@ def run_query(q: QueryIn) -> dict[str, Any]:
 
 # ---------------------------------------------------------------- rebuild
 
+def _git_pull(path: Path) -> str:
+    """Best-effort `git pull --ff-only` on an already-cloned repo.
+
+    Returns a short status string; never raises. A repo that isn't a git
+    checkout (e.g. a plain local folder during dev) is silently skipped
+    so this stays safe to call unconditionally.
+    """
+    if not (path / ".git").exists():
+        return f"{path}: not a git checkout, skipped"
+    try:
+        proc = subprocess.run(
+            ["git", "pull", "--ff-only"],
+            cwd=str(path), capture_output=True, text=True, timeout=60,
+        )
+    except subprocess.TimeoutExpired:
+        return f"{path}: git pull timed out"
+    if proc.returncode != 0:
+        return f"{path}: git pull failed: {proc.stderr.strip()[-300:]}"
+    return f"{path}: {proc.stdout.strip() or 'up to date'}"
+
+
 @app.post("/api/graph/rebuild", dependencies=[auth])
 def rebuild_graph(body: RebuildIn) -> dict[str, Any]:
     """Rebuild the knowledge graph with our Graphify fork and reload Neo4j.
 
-    Delegates to the fork's CLI (`python3 -m graphify.codegraph --repos
-    <json> --push`). Rebuilds *all* registered repos so cross-repo edges
-    (e.g. frontend fetches -> backend endpoints) resolve correctly.
+    Pulls the latest commit for every registered repo (and the graphify
+    fork itself) before extracting, so a rebuild triggered right after a
+    merge actually reflects that merge instead of a stale on-disk
+    checkout. Delegates to the fork's CLI (`python3 -m graphify.codegraph
+    --repos <json> --push`). Rebuilds *all* registered repos so
+    cross-repo edges (e.g. frontend fetches -> backend endpoints) resolve
+    correctly.
     """
     repos = load_repos()
     if body.repo_id != "all" and not any(r["id"] == body.repo_id for r in repos):
@@ -257,6 +282,8 @@ def rebuild_graph(body: RebuildIn) -> dict[str, Any]:
             "graphify fork exporter not found yet "
             f"(expected {entry}); build the fork first",
         )
+    pull_log = [_git_pull(GRAPHIFY_DIR)]
+    pull_log += [_git_pull(Path(r["path"])) for r in repos]
     repos_json = json.dumps([{"name": r["id"], "path": r["path"]} for r in repos])
     tmp = BASE_DIR / ".rebuild-repos.json"
     tmp.write_text(repos_json)
@@ -278,7 +305,7 @@ def rebuild_graph(body: RebuildIn) -> dict[str, Any]:
     if proc.returncode != 0:
         raise HTTPException(500, f"rebuild failed: {proc.stderr[-2000:]}")
     return {"status": "ok", "repos": [r["id"] for r in repos],
-            "log": proc.stdout[-2000:]}
+            "pulled": pull_log, "log": proc.stdout[-2000:]}
 
 
 # ---------------------------------------------------------------- chat

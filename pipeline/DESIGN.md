@@ -83,7 +83,10 @@ Requirement (free text)
 No stage advances without its gate explicitly passing in this chat.
 If a gate fails (user requests changes), the pipeline loops back to
 the stage that produced the rejected artifact — it does not skip
-forward.
+forward. If the *requirement itself* changes mid-run (not just a gate
+rejection), see `pipeline-gates.mdc` rules 7-8 for the backward-cascade
+procedure (in-flight stories) vs. treating it as a new requirement
+(already-merged stories).
 
 ---
 

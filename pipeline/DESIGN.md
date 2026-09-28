@@ -326,19 +326,29 @@ code-graph-wsp/                           (workspace root)
 
 ## 10. Decisions (locked in)
 
-1. **Branch/PR mechanics — real PR per story.** Each story is
-   implemented on its own branch and opened as a real GitHub PR
-   against that repo's `master`. Gates 3 (implementation approval), 4
-   (traceability sign-off), and 5 (QA checklist acceptance) are all
-   attached to that PR — as PR description sections and/or comments —
-   so the review trail is real GitHub history, not just chat. Gate 7
-   (merge) is the literal PR merge, which is what fires the existing
-   GitHub Action → rebuild. Chat approval is still required before the
-   PR is opened for merge (the gate lives in both places: the artifact
-   is on the PR, the go-ahead is confirmed in chat) — this needs a
-   GitHub credential with **write** access (branches + PRs), which is
-   a step up from the VM's deliberately read-only rebuild credential;
-   see §11.
+1. **Branch/PR mechanics — PR for visibility only, gate is chat-only**
+   (revised — see §10.1a). Each story is still implemented on its own
+   branch and opened as a real GitHub PR against that repo's `master`,
+   with the critique/traceability/QA docs posted to it. But **the PR is
+   no longer part of the gate mechanism** — it's kept purely for
+   visibility, CI, and history. All 5 gates are approved in chat only;
+   an open, unreviewed, or even CI-red PR does not block a gate, and a
+   gate passing in chat does not require any GitHub-side action on the
+   PR. Gate 7 (merge) is still the literal PR merge (simplest way to
+   fire the existing GitHub Action → rebuild), performed once Gate 5 has
+   passed in chat — not because the PR itself was "approved" on GitHub.
+   This still needs a GitHub credential with **write** access (branches
+   + PRs), a step up from the VM's deliberately read-only rebuild
+   credential; see §11.
+
+### 10.1a Amendment: PR approval gate removed
+
+Originally, gates 3 and 4 were meant to be "companion checks" — chat
+approval *and* PR review, neither a substitute for the other (see the
+now-superseded rule 5 previously in `pipeline-gates.mdc`). This was
+removed: PRs are opened for visibility only, and no gate depends on any
+GitHub-side PR state (open/reviewed/approved/checks). Only the chat
+approval matters for advancing past a gate.
 2. **Artifact location — inside the `codegraph` repo.**
    `pipeline/<requirement-slug>/...` is committed to `codegraph`,
    versioned alongside the graph tooling it's built on top of (it

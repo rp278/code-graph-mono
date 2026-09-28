@@ -8,25 +8,23 @@
     "Gate 1 (1_stories) approved for shop-api. Advanced shop-api to Stage 2; presenting Gate 2 (design). shop-web Gate 1 still pending.",
     "Gate 2 (2_plan) approved for shop-api. Implemented on pipeline/remove-just-for-today-flag-changes/shop-api, live-verified (fresh seed + migrate DROP COLUMN for JFT and is_on_sale + POST/PUT ignore stray JFT + restart), opened PR #4, presenting Gate 3.",
     "Gate 3 (3_impl) approved for shop-api. Traceability matrix 6/6 verified, posted on PR #4, presenting Gate 4.",
-    "Gate 4 (4_traceability) approved for shop-api. QA checklist prepared and posted on PR #4, presenting Gate 5."
+    "Gate 4 (4_traceability) approved for shop-api. QA checklist prepared and posted on PR #4, presenting Gate 5.",
+    "Gate 5 (5_qa) approved for shop-api. Squash-merged PR #4 -> 630d797. Presenting Gate 1 for shop-web."
   ],
   "stories": {
     "shop-api": {
-      "stage": "6-qa",
+      "stage": "done",
       "gates": {
         "1_stories": "approved",
         "2_plan": "approved",
         "3_impl": "approved",
         "4_traceability": "approved",
-        "5_qa": null
+        "5_qa": "approved"
       },
       "branch": "pipeline/remove-just-for-today-flag-changes/shop-api",
       "pr_url": "https://github.com/techfxs/shop-api/pull/4",
-      "pending_gate": {
-        "gate": "5_qa",
-        "presented_at": "2026-09-28T20:20:00Z",
-        "summary": "shop-api QA checklist (9 steps): fresh DB — 8 products with no is_just_for_today/is_on_sale keys; GET by id clean; POST with/without stray is_just_for_today → 201 without field. Legacy DB — DROP COLUMN for JFT (and leftover is_on_sale); GET clean; PUT ignores stray JFT while updating other fields; restart stable. Posted on https://github.com/techfxs/shop-api/pull/4. Full checklist in .pipeline/remove-just-for-today-flag-changes/qa-checklist.md."
-      }
+      "merge_status": "merged",
+      "merge_commit": "630d797"
     },
     "shop-web": {
       "stage": "1-analysis",
@@ -38,7 +36,12 @@
         "5_qa": null
       },
       "branch": null,
-      "pr_url": null
+      "pr_url": null,
+      "pending_gate": {
+        "gate": "1_stories",
+        "presented_at": "2026-09-28T20:24:00Z",
+        "summary": "shop-web story (already in stories.md): remove the Just For Today badge from ProductCard (Home/ProductList) and ProductDetail — no badge-just-for-today / product.is_just_for_today rendering; remove unused .badge-just-for-today CSS rules from index.css; leave category badges and loading/error states unchanged. shop-api story is already merged (PR #4 → 630d797)."
+      }
     }
   }
 }

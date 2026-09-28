@@ -11,7 +11,8 @@
     "Gate 4 (4_traceability) approved for shop-api. QA checklist 9/9 prepared and posted on PR #2, presenting Gate 5.",
     "Gate 5 (5_qa) approved for shop-api. Squash-merged PR #2 -> 4f980bb. shop-web still waiting on Gate 1.",
     "Gate 1 (1_stories) approved for shop-web. Advanced to Stage 2; presenting Gate 2 (design).",
-    "Gate 2 (2_plan) approved for shop-web. Implemented badge UI, live browser-verified (2 JFT + 2 Clearance on list; Aurora detail JFT; Headphones Clearance only), opened shop-web PR #2, presenting Gate 3."
+    "Gate 2 (2_plan) approved for shop-web. Implemented badge UI, live browser-verified (2 JFT + 2 Clearance on list; Aurora detail JFT; Headphones Clearance only), opened shop-web PR #2, presenting Gate 3.",
+    "Gate 3 (3_impl) approved for shop-web. Traceability matrix 4/4 verified, posted on PR #2, presenting Gate 4."
   ],
   "stories": {
     "shop-api": {
@@ -29,20 +30,20 @@
       "merge_commit": "4f980bb"
     },
     "shop-web": {
-      "stage": "4-critique",
+      "stage": "5-traceability",
       "gates": {
         "1_stories": "approved",
         "2_plan": "approved",
-        "3_impl": null,
+        "3_impl": "approved",
         "4_traceability": null,
         "5_qa": null
       },
       "branch": "pipeline/implement-a-new-flag-just-for-today-flag/shop-web",
       "pr_url": "https://github.com/techfxs/shop-web/pull/2",
       "pending_gate": {
-        "gate": "3_impl",
-        "presented_at": "2026-09-28T19:34:00Z",
-        "summary": "shop-web implementation: teal Just For Today badge on ProductCard (bottom-left) and ProductDetail when is_just_for_today is true; no overlap with category/Clearance; loading/error untouched. Live browser check: 2 JFT + 2 Clearance on /products; Aurora detail shows JFT; Headphones shows Clearance only. PR: https://github.com/techfxs/shop-web/pull/2 — critique in shop-web/.pipeline/implement-a-new-flag-just-for-today-flag/critique.md."
+        "gate": "4_traceability",
+        "presented_at": "2026-09-28T19:46:01Z",
+        "summary": "shop-web traceability: 4/4 EARS clauses verified (ProductCard JFT badge bottom-left, ProductDetail inline, absent when false, loading/error untouched). Matrix in shop-web/.pipeline/implement-a-new-flag-just-for-today-flag/traceability.md and commented on https://github.com/techfxs/shop-web/pull/2."
       }
     }
   }

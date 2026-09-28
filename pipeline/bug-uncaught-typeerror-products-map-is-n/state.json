@@ -1,0 +1,29 @@
+{
+  "requirement": "Bug: Uncaught TypeError: products.map is not a function\n\nError / stack trace:\nUncaught TypeError: products.map is not a function\n    at ProductList (http://localhost:5174/src/pages/ProductList.jsx:122:24)\n    at renderWithHooks (react-dom_client.js:4400:19)\n    at updateFunctionComponent (react-dom_client.js:5775:16)\n    at beginWork (react-dom_client.js:6391:20)\n\nExtra details:\nHome page also shows products.slice is not a function",
+  "slug": "bug-uncaught-typeerror-products-map-is-n",
+  "kind": "bug",
+  "agent_id": "agent-6eb709ce-e2d6-4c13-be70-0464082c6eff",
+  "notes": [
+    "Started via dashboard (Cursor SDK, local runtime) at 2026-09-28T23:05:09.544502+00:00.",
+    "Gate 1: located contract mismatch — shop-api GET /api/products returns {items,total} while shop-web ProductList/Home and shop-api list tests still expect a bare array. Primary story: shop-api."
+  ],
+  "stories": {
+    "shop-api": {
+      "stage": "1-analysis",
+      "gates": {
+        "1_analysis": null,
+        "2_rootcause": null,
+        "3_repro": null,
+        "4_fix": null,
+        "5_qa": null
+      },
+      "branch": null,
+      "pr_url": null,
+      "pending_gate": {
+        "gate": "1_analysis",
+        "presented_at": "2026-09-28T23:10:00.000000+00:00",
+        "summary": "Analysis for bug-uncaught-typeerror-products-map-is-n (shop-api): ProductList/Home throw because GET /api/products now returns {items,total} while clients and API list tests still treat the body as a bare product array. Candidate fix location is shop-api’s list handler/schema (restore array) or, if the wrap is intentional, shop-web fetchProducts unwrap + API test updates. Scope fence and EARS current/expected/unchanged clauses are in shop-api/.pipeline/bug-uncaught-typeerror-products-map-is-n/bugfix.md. Approve to proceed to root-cause, or revise if the affected repo/scope should change."
+      }
+    }
+  }
+}

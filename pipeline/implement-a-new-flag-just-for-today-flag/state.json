@@ -6,24 +6,25 @@
     "Started via dashboard (Cursor SDK, local runtime) at 2026-09-28T11:29:27.652053+00:00.",
     "Stage 1 complete (headless): grounded against live codegraph + post-clearance-badge source. Affected repos: shop-api, shop-web. Proposed field is_just_for_today; seeded products Aurora Desk Lamp + Pixel Mechanical Keyboard; ProductCard + ProductDetail scope; independent of existing is_on_sale/Clearance.",
     "Gate 1 (1_stories) approved for shop-api only. shop-web Gate 1 still pending. Advanced shop-api to Stage 2 and presented Gate 2 (design).",
-    "Gate 2 (2_plan) approved for shop-api. Implemented on pipeline/implement-a-new-flag-just-for-today-flag/shop-api, live-verified (fresh/migrate/POST/PUT/restart), opened PR #2, presenting Gate 3."
+    "Gate 2 (2_plan) approved for shop-api. Implemented on pipeline/implement-a-new-flag-just-for-today-flag/shop-api, live-verified (fresh/migrate/POST/PUT/restart), opened PR #2, presenting Gate 3.",
+    "Gate 3 (3_impl) approved for shop-api. Traceability matrix 6/6 verified, posted on PR #2, presenting Gate 4."
   ],
   "stories": {
     "shop-api": {
-      "stage": "4-critique",
+      "stage": "5-traceability",
       "gates": {
         "1_stories": "approved",
         "2_plan": "approved",
-        "3_impl": null,
+        "3_impl": "approved",
         "4_traceability": null,
         "5_qa": null
       },
       "branch": "pipeline/implement-a-new-flag-just-for-today-flag/shop-api",
       "pr_url": "https://github.com/techfxs/shop-api/pull/2",
       "pending_gate": {
-        "gate": "3_impl",
-        "presented_at": "2026-09-28T19:27:30Z",
-        "summary": "shop-api implementation: is_just_for_today on product resource (db column + migration/seed for Aurora Desk Lamp & Pixel Mechanical Keyboard, schema, serializeProduct coercion, POST/PUT default false). is_on_sale untouched. Live curl verification passed (fresh, migrate, POST/PUT, restart survival). PR: https://github.com/techfxs/shop-api/pull/2 — critique in shop-api/.pipeline/implement-a-new-flag-just-for-today-flag/critique.md."
+        "gate": "4_traceability",
+        "presented_at": "2026-09-28T19:29:20Z",
+        "summary": "shop-api traceability: 6/6 EARS clauses verified (GET list/detail, POST/PUT persist, default false, seed Aurora+Keyboard, is_on_sale unchanged) plus restart-survival of PUT-off. Matrix in shop-api/.pipeline/implement-a-new-flag-just-for-today-flag/traceability.md and commented on https://github.com/techfxs/shop-api/pull/2."
       }
     },
     "shop-web": {

@@ -6,24 +6,25 @@
   "notes": [
     "Started via dashboard (Cursor SDK, local runtime) at 2026-09-28T23:05:09.544502+00:00.",
     "Gate 1: located contract mismatch — shop-api GET /api/products returns {items,total} while shop-web ProductList/Home and shop-api list tests still expect a bare array. Primary story: shop-api.",
-    "Gate 1 approved; Gate 2 root cause: restore bare-array response in shop-api GET /api/products (schema + return); reject client-side unwrap / keep-wrap paths."
+    "Gate 1 approved; Gate 2 root cause: restore bare-array response in shop-api GET /api/products (schema + return); reject client-side unwrap / keep-wrap paths.",
+    "Gate 2 approved; Gate 3: branch pipeline/bug-uncaught-typeerror-products-map-is-n/shop-api; npm test on unfixed code → 5 bug-condition fails (wrapped object) + 7 preservation passes; no Stage-3 source edits."
   ],
   "stories": {
     "shop-api": {
-      "stage": "2-rootcause",
+      "stage": "3-repro",
       "gates": {
         "1_analysis": "approved",
-        "2_rootcause": null,
+        "2_rootcause": "approved",
         "3_repro": null,
         "4_fix": null,
         "5_qa": null
       },
-      "branch": null,
+      "branch": "pipeline/bug-uncaught-typeerror-products-map-is-n/shop-api",
       "pr_url": null,
       "pending_gate": {
-        "gate": "2_rootcause",
-        "presented_at": "2026-09-28T23:12:00.000000+00:00",
-        "summary": "Root cause for shop-api: GET /api/products returns {items,total} (server.js L74–76 + matching response schema) while fetchProducts/Home/ProductList and existing list tests still expect a bare product array — hence products.map/slice TypeErrors. Bug condition C = successful list response is non-array; postcondition P = body is a product array with same filters. Proposed fix: restore array schema + return in shop-api/src/server.js only (no shop-web changes). Details in shop-api/.pipeline/bug-uncaught-typeerror-products-map-is-n/rootcause.md. Approve to proceed to repro/tests, or revise the hypothesis/fence."
+        "gate": "3_repro",
+        "presented_at": "2026-09-28T23:15:00.000000+00:00",
+        "summary": "Reproduce for shop-api: on branch pipeline/bug-uncaught-typeerror-products-map-is-n/shop-api, npm test against the unfixed {items,total} list response fails 5 bug-condition tests (Array.isArray / .length / filter/search/empty) with the wrapped object shown in the assertion, while 7 preservation tests (health, categories, product by id, 404, POST, validation, DELETE) pass. Stage 3 changed only test/ and .pipeline/. Evidence in shop-api/.pipeline/bug-uncaught-typeerror-products-map-is-n/repro.md. Approve to allow the minimal schema+return fix, or revise."
       }
     }
   }

@@ -4,13 +4,14 @@
   "agent_id": "agent-6a86223e-a1a7-494a-bacf-7199915ba0f3",
   "notes": [
     "Started via dashboard (Cursor SDK, local runtime) at 2026-09-28T20:08:52.725368+00:00.",
-    "Stage 1 complete (headless): grounded against live codegraph (serializeProduct/initDb/products/GET|POST|PUT /api/products/ProductCard/ProductDetail) + post-JFT and post-clearance-removal source. Affected repos: shop-api, shop-web. Reverses is_just_for_today/Just For Today end-to-end; leaves category badges and is_on_sale DROP migration untouched. Presenting Gate 1 for shop-api."
+    "Stage 1 complete (headless): grounded against live codegraph (serializeProduct/initDb/products/GET|POST|PUT /api/products/ProductCard/ProductDetail) + post-JFT and post-clearance-removal source. Affected repos: shop-api, shop-web. Reverses is_just_for_today/Just For Today end-to-end; leaves category badges and is_on_sale DROP migration untouched. Presenting Gate 1 for shop-api.",
+    "Gate 1 (1_stories) approved for shop-api. Advanced shop-api to Stage 2; presenting Gate 2 (design). shop-web Gate 1 still pending."
   ],
   "stories": {
     "shop-api": {
-      "stage": "1-analysis",
+      "stage": "2-plan",
       "gates": {
-        "1_stories": null,
+        "1_stories": "approved",
         "2_plan": null,
         "3_impl": null,
         "4_traceability": null,
@@ -19,9 +20,9 @@
       "branch": null,
       "pr_url": null,
       "pending_gate": {
-        "gate": "1_stories",
-        "presented_at": "2026-09-28T20:12:00Z",
-        "summary": "shop-api story: remove is_just_for_today end-to-end from the product resource (GET list/detail omit the field; POST/PUT ignore stray is_just_for_today rather than reject; drop the field from schemas, serializeProduct, seed inserts, and ADD-COLUMN/backfill in db.js). Leave the existing is_on_sale DROP COLUMN migration and all non-JFT columns unchanged. Pre-existing DBs with the column must still serve correct responses without leaking is_just_for_today (drop vs leave-unused deferred to design). shop-web story is drafted in the same stories.md but Gate 1 for shop-web is not requested yet."
+        "gate": "2_plan",
+        "presented_at": "2026-09-28T20:13:30Z",
+        "summary": "shop-api design: drop is_just_for_today from CREATE TABLE, seed, schemas, serializeProduct (remove helper), and POST/PUT write paths; replace ADD-COLUMN/backfill with a one-time DROP COLUMN on startup (same pattern as clearance removal). Leave the existing is_on_sale DROP migration unchanged. Stray is_just_for_today in request bodies is ignored, not rejected. Branch pipeline/remove-just-for-today-flag-changes/shop-api will be created after Gate 2 approval."
       }
     },
     "shop-web": {

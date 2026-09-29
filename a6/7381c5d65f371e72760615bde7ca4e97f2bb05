@@ -1,0 +1,23 @@
+codegraph/api/src/pipeline_agent.py
+  s_99c32d72d5286c::t_5d32a93f41d734 329-332
+.cursor/rules/pipeline-bugfix.mdc
+  s_99c32d72d5286c::t_5d32a93f41d734 83-90
+.cursor/skills/bug-fix-pipeline/SKILL.md
+  s_99c32d72d5286c::t_5d32a93f41d734 52,126-143,156-157,192-196,238-244,251-253,255-256
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.4",
+  "base_commit_sha": "a67381c5d65f371e72760615bde7ca4e97f2bb05",
+  "prompts": {},
+  "sessions": {
+    "s_99c32d72d5286c": {
+      "agent_id": {
+        "tool": "cursor",
+        "id": "cf35b73d-bb00-4de2-a827-c8b55f302d72",
+        "model": "claude-sonnet-5-5"
+      },
+      "human_author": "Ramesh Polishetti <rp278@tmw.com>"
+    }
+  }
+}

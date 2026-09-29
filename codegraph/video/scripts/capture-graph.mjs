@@ -6,7 +6,7 @@ const get = async (p) => { const r = await fetch(API + p); if (!r.ok) throw new 
 const strip = (p) => (p || '').replace(/^.*?\/code-graph-wsp(?=\/)/, '');
 const clean = (n) => ({ ...n, file: strip(n.file) });
 
-const repos = await get('/api/repos');
+const repos = (await get('/api/repos')).map((r) => ({ ...r, path: strip(r.path) })); // no absolute local paths
 const stats = await get('/api/graph/stats');
 const links = (await get('/api/graph/repo-links')).links;
 

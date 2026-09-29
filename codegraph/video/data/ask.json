@@ -3,41 +3,61 @@
   "repo": "tb-discovery-mfe",
   "statuses": [
     {
-      "t": 1.005,
+      "t": 1.003,
       "text": "RUNNING"
     },
     {
-      "t": 2.01,
-      "text": "GlobalScriptsSDK` imports and usages, then confirm in the source files."
+      "t": 3.006,
+      "text": "Running `glob`"
     },
     {
-      "t": 3.012,
+      "t": 4.007,
       "text": "Finished `glob`"
     },
     {
-      "t": 5.016,
-      "text": "Finished `grep` — /Users/rp278/Desktop/bot/code-graph-wsp/tb-discovery-mfe"
+      "t": 5.011,
+      "text": "Finished `grep` — /code-graph-wsp/tb-discovery-mfe"
     },
     {
-      "t": 10.035,
-      "text": "Finished `read` — /Users/rp278/Desktop/bot/code-graph-wsp/tb-discovery-mfe/app/[locale]/layout.tsx"
+      "t": 7.017,
+      "text": "Running `read` — /code-graph-wsp/tb-discovery-mfe/app/[locale]/layout.tsx"
     },
     {
-      "t": 11.038,
-      "text": ".GLOBAL_SCRIPTS_DEBUG,           }}         /> ```  That layout wraps all"
+      "t": 8.023,
+      "text": "Thinking: I have identified where"
     },
     {
-      "t": 12.041,
-      "text": "contracts — they do not mount the component."
+      "t": 10.032,
+      "text": "`"
+    },
+    {
+      "t": 11.035,
+      "text": "Scripts"
+    },
+    {
+      "t": 12.037,
+      "text": "={"
+    },
+    {
+      "t": 13.039,
+      "text": "IP"
+    },
+    {
+      "t": 14.042,
+      "text": "/"
+    },
+    {
+      "t": 15.044,
+      "text": "does"
     }
   ],
-  "answer": "**Production usage:** only in the locale root layout.\n\n### Mounted in `app/[locale]/layout.tsx`\n\nImported at line 41 and rendered in `<head>` (after `TBAnalyticsStubScript`) at lines 219–227:\n\n```219:227:app/[locale]/layout.tsx\n        <GlobalScriptsSDK\n          config={{\n            brand,\n            locale,\n            page,\n            runtimeConfig,\n            debug: env.GLOBAL_SCRIPTS_DEBUG,\n          }}\n        />\n```\n\nThat layout wraps all `[locale]` routes, so `GlobalScriptsSDK` runs app-wide for those pages.\n\n### Tests\n\n`app/components/GlobalScripts/__tests__/GlobalScriptsSDK.test.tsx` imports and renders it directly (line 3, and many `render(<GlobalScriptsSDK …>)` calls).\n\n### Mentions only (not imported/rendered)\n\nComments in `AnalyticsLifecycleTracker.tsx`, its test, `tracking.ts`, `searchGTMevents.ts`, `usePdpCapiViewContent.ts`, and `lib/config/publicConfig.ts` refer to it for analytics ownership / contracts — they do not mount the component.",
+  "answer": "**Production usage:** only in the locale root layout.\n\n`GlobalScriptsSDK` is imported and rendered in `app/[locale]/layout.tsx` inside `<head>`, right after `TBAnalyticsStubScript`:\n\n```41:41:app/[locale]/layout.tsx\nimport GlobalScriptsSDK from '../components/GlobalScripts/GlobalScriptsSDK';\n```\n\n```217:227:app/[locale]/layout.tsx\n        <TBAnalyticsStubScript />\n        <NavigationStylesheet logger={context.logger} requestHeaders={context.requestHeaders} />\n        <GlobalScriptsSDK\n          config={{\n            brand,\n            locale,\n            page,\n            runtimeConfig,\n            debug: env.GLOBAL_SCRIPTS_DEBUG,\n          }}\n        />\n```\n\nThat mounts it for every locale-scoped page under that layout.\n\n**Also referenced (not mounted):**\n- **Tests:** `app/components/GlobalScripts/__tests__/GlobalScriptsSDK.test.tsx` — renders the component directly.\n- **Comments only:** `AnalyticsLifecycleTracker.tsx` notes that `GlobalScriptsSDK` owns the initial `page_view`; it does not import or render it.\n\n**Definition:** `app/components/GlobalScripts/GlobalScriptsSDK.tsx` (`export default function GlobalScriptsSDK`).",
   "context": [
     {
       "id": "tb-discovery-mfe::kairos_fabric_hooks_usedevice",
       "label": "useDevice()",
       "type": "code",
-      "file": "/Users/rp278/Desktop/bot/code-graph-wsp/tb-discovery-mfe/__mocks__/kairos-fabric-hooks.tsx",
+      "file": "/code-graph-wsp/tb-discovery-mfe/__mocks__/kairos-fabric-hooks.tsx",
       "repo": "tb-discovery-mfe",
       "neighbors": [
         "kairos-fabric-hooks.tsx [code]"
@@ -47,7 +67,7 @@
       "id": "tb-discovery-mfe::searchfacetsdrawer_scrollfocusedtextinputtotop",
       "label": "scrollFocusedTextInputToTop()",
       "type": "code",
-      "file": "/Users/rp278/Desktop/bot/code-graph-wsp/tb-discovery-mfe/app/[locale]/search/components/SearchFacetsDrawer/SearchFacetsDrawer.tsx",
+      "file": "/code-graph-wsp/tb-discovery-mfe/app/[locale]/search/components/SearchFacetsDrawer/SearchFacetsDrawer.tsx",
       "repo": "tb-discovery-mfe",
       "neighbors": [
         "getDrawerScroller() [code]",
@@ -58,7 +78,7 @@
       "id": "tb-discovery-mfe::searchfacetsdrawer_scrollfocusedfacetrowintoview",
       "label": "scrollFocusedFacetRowIntoView()",
       "type": "code",
-      "file": "/Users/rp278/Desktop/bot/code-graph-wsp/tb-discovery-mfe/app/[locale]/search/components/SearchFacetsDrawer/SearchFacetsDrawer.tsx",
+      "file": "/code-graph-wsp/tb-discovery-mfe/app/[locale]/search/components/SearchFacetsDrawer/SearchFacetsDrawer.tsx",
       "repo": "tb-discovery-mfe",
       "neighbors": [
         "SearchFacetsDrawer.tsx [code]"
@@ -68,7 +88,7 @@
       "id": "tb-discovery-mfe::globalscriptssdk",
       "label": "GlobalScriptsSDK.tsx",
       "type": "code",
-      "file": "/Users/rp278/Desktop/bot/code-graph-wsp/tb-discovery-mfe/app/components/GlobalScripts/GlobalScriptsSDK.tsx",
+      "file": "/code-graph-wsp/tb-discovery-mfe/app/components/GlobalScripts/GlobalScriptsSDK.tsx",
       "repo": "tb-discovery-mfe",
       "neighbors": [
         "POST /api-replatform/telemetry/xapi [endpoint]",
@@ -100,7 +120,7 @@
       "id": "tb-discovery-mfe::globalscriptssdk_globalscriptssdk",
       "label": "GlobalScriptsSDK()",
       "type": "code",
-      "file": "/Users/rp278/Desktop/bot/code-graph-wsp/tb-discovery-mfe/app/components/GlobalScripts/GlobalScriptsSDK.tsx",
+      "file": "/code-graph-wsp/tb-discovery-mfe/app/components/GlobalScripts/GlobalScriptsSDK.tsx",
       "repo": "tb-discovery-mfe",
       "neighbors": [
         "GlobalScriptsSDK.tsx [code]"
@@ -110,7 +130,7 @@
       "id": "tb-discovery-mfe::globalscriptssdk_test",
       "label": "GlobalScriptsSDK.test.tsx",
       "type": "code",
-      "file": "/Users/rp278/Desktop/bot/code-graph-wsp/tb-discovery-mfe/app/components/GlobalScripts/__tests__/GlobalScriptsSDK.test.tsx",
+      "file": "/code-graph-wsp/tb-discovery-mfe/app/components/GlobalScripts/__tests__/GlobalScriptsSDK.test.tsx",
       "repo": "tb-discovery-mfe",
       "neighbors": [
         "serverPageViewAfterLoad.ts [code]",
@@ -127,7 +147,7 @@
       "id": "tb-discovery-mfe::usedebounce",
       "label": "useDebounce.ts",
       "type": "code",
-      "file": "/Users/rp278/Desktop/bot/code-graph-wsp/tb-discovery-mfe/hooks/useDebounce.ts",
+      "file": "/code-graph-wsp/tb-discovery-mfe/hooks/useDebounce.ts",
       "repo": "tb-discovery-mfe",
       "neighbors": [
         "useDebounce() [code]",
@@ -138,7 +158,7 @@
       "id": "tb-discovery-mfe::usedebounce_usedebounce",
       "label": "useDebounce()",
       "type": "code",
-      "file": "/Users/rp278/Desktop/bot/code-graph-wsp/tb-discovery-mfe/hooks/useDebounce.ts",
+      "file": "/code-graph-wsp/tb-discovery-mfe/hooks/useDebounce.ts",
       "repo": "tb-discovery-mfe",
       "neighbors": [
         "useDebounce.ts [code]"
@@ -147,5 +167,5 @@
   ],
   "status": "done",
   "error": null,
-  "seconds": 13.043
+  "seconds": 16.046
 }

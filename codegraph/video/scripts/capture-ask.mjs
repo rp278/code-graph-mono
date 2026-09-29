@@ -18,7 +18,9 @@ for (;;) {
   const txt = s.live_status?.text;
   if (txt && statuses[statuses.length - 1]?.text !== txt) statuses.push({ t: (Date.now() - t0) / 1000, text: txt });
   if (s.status !== 'running') {
-    writeFileSync(new URL('../data/ask.json', import.meta.url), JSON.stringify({ question, repo, statuses, answer: s.answer, context: s.context, status: s.status, error: s.error, seconds: (Date.now() - t0) / 1000 }, null, 2));
+    const json = JSON.stringify({ question, repo, statuses, answer: s.answer, context: s.context, status: s.status, error: s.error, seconds: (Date.now() - t0) / 1000 }, null, 2);
+    // never commit absolute local paths
+    writeFileSync(new URL('../data/ask.json', import.meta.url), json.replace(/\/Users\/[^"\\]*?\/code-graph-wsp/g, '/code-graph-wsp'));
     console.log('done', s.status, statuses.length, 'statuses', ((Date.now() - t0) / 1000).toFixed(0) + 's');
     break;
   }

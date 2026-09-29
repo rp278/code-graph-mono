@@ -4,37 +4,37 @@
    "id": "tb-common-mfe",
    "name": "tb-common-mfe",
    "language": "typescript",
-   "path": "/Users/rp278/Desktop/bot/code-graph-wsp/tb-common-mfe"
+   "path": "/code-graph-wsp/tb-common-mfe"
   },
   {
    "id": "tb-discovery-mfe",
    "name": "tb-discovery-mfe",
    "language": "typescript",
-   "path": "/Users/rp278/Desktop/bot/code-graph-wsp/tb-discovery-mfe"
+   "path": "/code-graph-wsp/tb-discovery-mfe"
   },
   {
    "id": "tb-marketing-xapi",
    "name": "tb-marketing-xapi",
    "language": "typescript",
-   "path": "/Users/rp278/Desktop/bot/code-graph-wsp/tb-marketing-xapi"
+   "path": "/code-graph-wsp/tb-marketing-xapi"
   },
   {
    "id": "tb-discovery-xapi",
    "name": "tb-discovery-xapi",
    "language": "java",
-   "path": "/Users/rp278/Desktop/bot/code-graph-wsp/tb-discovery-xapi"
+   "path": "/code-graph-wsp/tb-discovery-xapi"
   },
   {
    "id": "tb-selection-xapi",
    "name": "tb-selection-xapi",
    "language": "java",
-   "path": "/Users/rp278/Desktop/bot/code-graph-wsp/tb-selection-xapi"
+   "path": "/code-graph-wsp/tb-selection-xapi"
   },
   {
    "id": "kairos-fabric",
    "name": "kairos-fabric",
    "language": "typescript",
-   "path": "/Users/rp278/Desktop/bot/code-graph-wsp/kairos-fabric"
+   "path": "/code-graph-wsp/kairos-fabric"
   }
  ],
  "stats": {

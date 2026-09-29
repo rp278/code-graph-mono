@@ -60,7 +60,6 @@ export const Overview: React.FC = () => {
           </Sequence>
         </React.Fragment>
       ))}
-      <Audio src={staticFile('audio/music.wav')} volume={0.55} />
     </AbsoluteFill>
   );
 };

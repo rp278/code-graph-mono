@@ -1,6 +1,6 @@
 {
-  "voice": "Samantha",
-  "rate": 172,
+  "voice": "Daniel",
+  "rate": 168,
   "scenes": [
     {
       "id": "intro",
@@ -52,8 +52,8 @@
         },
         {
           "id": "a3",
-          "text": "In seconds you get an answer with real file names and line numbers. The SDK is mounted once, in the locale layout, at lines 219 to 227. The rest are tests and comments.",
-          "say": "In seconds you get an answer with real file names and line numbers. The S D K is mounted once, in the locale layout, at lines two nineteen to two twenty seven. The rest are tests and comments."
+          "text": "In seconds you get an answer with real file names and line numbers. The SDK is mounted once, in the locale layout, at lines 217 to 227. The rest are tests and comments.",
+          "say": "In seconds you get an answer with real file names and line numbers. The S D K is mounted once, in the locale layout, at lines two seventeen to two twenty seven. The rest are tests and comments."
         },
         {
           "id": "a4",
@@ -66,30 +66,29 @@
       "beats": [
         {
           "id": "f1",
-          "text": "Finally, Fix Bugs. Paste the error. This is a real crash from our demo shop: products.map is not a function. Then start the pipeline.",
-          "say": "Finally, Fix Bugs. Paste the error. This is a real crash from our demo shop: products dot map is not a function. Then start the pipeline."
+          "text": "Finally, Fix Bugs. Paste the error. This one is a TypeError from the discovery front end: slugify cannot read toLowerCase of undefined. Then start the pipeline.",
+          "say": "Finally, Fix Bugs. Paste the error. This one is a Type Error from the discovery front end: slugify cannot read to lower case of undefined. Then start the pipeline."
         },
         {
           "id": "f2",
-          "text": "The graph shows the crash is not really in the front end. The shop-web page expects a plain array, but shop-api started returning an object with items and total. Two repos, one contract mismatch.",
-          "say": "The graph shows the crash is not really in the front end. The shop web page expects a plain array, but shop A P I started returning an object with items and total. Two repos, one contract mismatch."
+          "text": "CodeGraph finds the function straight from the stack trace: slugify, in helpers formatters, in discovery MFE. It lists every file that imports it, and rules out same-named helpers in other repos.",
+          "say": "Code Graph finds the function straight from the stack trace: slugify, in helpers formatters, in discovery M F E. It lists every file that imports it, and rules out same-named helpers in other repos."
         },
         {
           "id": "f3",
-          "text": "The agent then works through five gates, and nothing moves forward until a human approves. Gate one, analysis. Gate two, the root cause, with a scope fence around the files it may touch."
+          "text": "The agent then works through four gates, and nothing moves forward until a human approves. Gate one, analysis. Gate two, the root cause: a guard was removed in an earlier commit, and the scope fence stays on that one function."
         },
         {
           "id": "f4",
-          "text": "Gate three is the proof: a test that fails on the unfixed code for the predicted reason. Five failures, with seven preservation tests still passing. No source is changed before this gate."
+          "text": "Gate three is the proof: two tests fail on the unfixed code for the predicted reason, fifteen preservation tests still pass, and no source is changed before this gate."
         },
         {
           "id": "f5",
-          "text": "Gate four is the smallest possible fix, and a pull request. All twelve tests pass. Gate five is a QA checklist. Approve it, and the pull request is squash-merged.",
-          "say": "Gate four is the smallest possible fix, and a pull request. All twelve tests pass. Gate five is a Q A checklist. Approve it, and the pull request is squash merged."
+          "text": "Gate four is the smallest possible fix, one restored guard, and an open pull request. All seventeen tests pass. Approve it, and the run is done. The pipeline never merges: a person reviews and merges the pull request."
         },
         {
           "id": "f6",
-          "text": "Every step leaves an artifact, so you review the reasoning, not just the diff."
+          "text": "Every step leaves an artifact, so you review the reasoning, not just the diff. And any run can be paused, restarted or deleted."
         }
       ]
     },

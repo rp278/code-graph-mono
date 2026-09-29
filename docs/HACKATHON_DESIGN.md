@@ -21,7 +21,7 @@
 All three sit on the same foundation:
 
 1. **A cross-repo knowledge graph**, built by **Graphify** and stored in Neo4j. It is built deterministically from the code, with no LLM at build time.
-2. **A React dashboard**, which draws the graph with **React Flow** and hosts the Ask AI and Fix Bugs screens.
+2. **A React dashboard**, which draws the graph with **React Flow** and hosts the Ask AI and Fix Bugs screens. It also has a **Feature Development** screen, which drives the sibling feature pipeline (it merges its own PRs after a 5-gate flow). That screen is hidden unless the cookie `cg_feature_development_enabled=true` is set, and it is outside the scope of this document.
 3. **Cursor SDK agents**, which are grounded by the graph and can read the real code.
 
 ### Core principle: the graph is a map, the code is the truth
@@ -101,7 +101,7 @@ flowchart TB
 
 1. **Collect files.** Skip `node_modules`, `dist`, `build`, `.git`, `.next`, `coverage`, virtual environments and similar folders. More folders can be added with `CODEGRAPH_SKIP_DIRS`.
 2. **Base AST extraction.** Functions, classes, imports, calls and inheritance, using tree-sitter.
-3. **Framework extractors.** Fastify, React, SQL, Next.js and Spring, plus service-call detection (table below). Test, mock and story files (`*.test.*`, `*.spec.*`, `*.stories.*`, `__tests__`, `__mocks__`, `e2e`, Java `src/test`) are skipped here, so a throwaway test route never becomes a fake endpoint. They are still read by the base AST step.
+3. **Framework extractors.** Fastify, React, SQL, Next.js and Spring, plus service-call detection (table below). Test, mock and story files (`*.test.*`, `*.spec.*`, `*.stories.*` for JS and TS, `*Test.java` and `*Tests.java`, and anything under `__tests__`, `__mocks__`, `__snapshots__`, `e2e`, `visual-tests` or Java `src/test`) are skipped here, so a throwaway test route never becomes a fake endpoint. They are still read by the base AST step.
 4. **Tag and namespace.** Every node and edge gets its repo name, and ids are prefixed `<repo>::`.
 5. **Package graph.** Every `package.json` becomes a `package` node with dependency edges.
 6. **Link pass.** Resolve pending calls, service dependencies and proxy routes into edges that cross repos (section 4.2).
@@ -386,6 +386,7 @@ sequenceDiagram
 - **Runs survive restarts.** The agent store is persisted as JSONL on disk, and `agent_id` is recorded in `state.json`, so the agent can be resumed after an API restart.
 - **Turns are strictly serial.** Responses given while the agent is busy are **queued** and sent in order. Duplicate answers to the same gate are rejected.
 - **Live status.** Each SDK message (thinking, tool call, text) becomes a one-line status in the UI, polled every 1.5 seconds.
+- **Run states.** The dashboard shows one of: *Idle*, *Starting*, *Running*, *Waiting on you* (a gate is open), *Paused*, *Done* (PR open and Gate 4 approved) or *Error*. While a run is working, the header shows the state as a pill with an icon-only **Pause** button beside it. **Restart** and **Delete** sit on the right and are enabled whenever the agent is not mid-turn.
 - **Done means the PR is open.** When every story reaches stage `done`, the run shows **Done**. That means "PR open and Gate 4 approved", not "merged".
 - **Pause and Resume.** While the agent is working, **Pause** cancels its in-flight step through the SDK. `state.json` and the repos are left as they are, so the step may be half-finished. Responses queued in the meantime are kept. The header shows **Paused**, and **Resume** continues the *same* agent with a message telling it to re-check what it had actually finished before carrying on. Restart and Delete are available while paused. A pause that arrives just as a turn finishes normally is ignored.
 - **Restart.** This starts the *same* run over: same slug and report, every gate cleared, and a fresh agent at Stage 1. The repos are not cleaned up. The earlier branches and PRs stay, are recorded under `restarts` in `state.json`, and the new agent is told to leave them alone and cut a new `-r<N>` branch. It is refused while the agent is mid-turn (pause it first).

@@ -514,7 +514,9 @@ s = new_slide(
     "Why not just ask an agent to fix it? The hypothesis is a claim and stage 3 exists to falsify it. "
     "Preservation tests come from the graph's blast radius, including consumers in other repos. "
     "Headless approvals: the agent writes a pending_gate marker in state.json and stops; the dashboard "
-    "shows it; approve or revise resumes the same agent."
+    "shows it; approve or revise resumes the same agent. Run controls in the dashboard: Pause cancels the "
+    "in-flight step (the agent re-checks its work on Resume), Restart starts the same run over with all gates "
+    "cleared (repos are not cleaned up), Delete removes only the run record."
 )
 header(s, "What makes it different", "Not just \"ask an agent to fix it\"", GREEN)
 pts = [
@@ -523,7 +525,7 @@ pts = [
     ("Every gate is mandatory", "Silence or a blanket \"looks fine\" is not approval. Rejection loops back.", RED),
     ("Scope fence", "Gate 2 fixes which files and functions may change. Leaving it means re-approval.", AMBER),
     ("\"No test\" is stated, never silent", "For races or env-only bugs, repro.md gives the reason and manual steps.", PURPLE),
-    ("Runs survive restarts", "state.json is the single source of truth. The same agent resumes by id.", BLUE),
+    ("You stay in control of a run", "Pause and resume, restart from scratch, or delete it. state.json survives API restarts.", BLUE),
 ]
 for i, (t, d, c) in enumerate(pts):
     col, row = i % 3, i // 3

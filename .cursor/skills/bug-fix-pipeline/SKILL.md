@@ -49,7 +49,7 @@ Merging is a human action outside this pipeline. (The feature skill's
      "stage": "1-analysis",
      "gates": {"1_analysis": null, "2_rootcause": null, "3_repro": null,
                "4_fix": null},
-     "branch": null, "pr_url": null
+     "base_branch": null, "branch": null, "pr_url": null
    }
    ```
 5. The input is an **intake block** with these parts (any except the error
@@ -123,6 +123,24 @@ Merging is a human action outside this pipeline. (The feature skill's
    results, and never block Gate 1 because the graph could not help.
 3. Decide which repo(s) actually need a change (usually one). Create
    `.pipeline/<slug>/` in each and add a story entry per repo.
+   **Pick the base branch per repo — do not just use whatever is checked
+   out.** The base branch is the branch where the bug actually exists,
+   because the story branch is cut from it and the PR targets it:
+   - Default: the repo's default branch (`git symbolic-ref --short
+     refs/remotes/origin/HEAD`).
+   - If the bug is **not** present on the default branch (e.g. it was
+     introduced on a feature/demo branch that is not merged), the base is
+     that branch — it must exist on `origin`, and the reporter's extra
+     details, `git branch -a` and `git log` on the suspect file usually
+     show which one.
+   - **Prove it:** run `git show origin/<base>:<path>` (or `git grep`) on
+     the suspect line at that ref and record the output in `bugfix.md`;
+     also state whether the same line is present or absent on the default
+     branch. If the bug is on the default branch, the default branch is the
+     base.
+   - Record `base_branch` in the story's `state.json` entry. If it is not
+     the default branch, say so in **Open questions** so the reviewer
+     confirms it at Gate 1.
 4. Write `bugfix.md` (identical shared copy in each affected repo, per the
    feature skill's convention):
    - **Signals** (from step 1) and **Graph evidence** (queries + hits, or
@@ -135,6 +153,8 @@ Merging is a human action outside this pipeline. (The feature skill's
      change. This list drives the preservation tests in Stage 3.
    - **Candidate location** and a **provisional scope fence** (files /
      functions).
+   - **Base branch** — the branch, and the proof from step 3 that the bug
+     exists at that ref.
    - **Open questions**, if the report is genuinely ambiguous.
 
 **GATE 1 (`1_analysis`)**: present `bugfix.md`. Headless: write
@@ -169,8 +189,11 @@ Merging is a human action outside this pipeline. (The feature skill's
 
 ## Stage 3 — Reproduce & baseline (still no source changes)
 
-Branch: `pipeline/<slug>/<repo>` (create it now). Only **test files** and
-`.pipeline/<slug>/` may change in this stage.
+Branch: `pipeline/<slug>/<repo>` (create it now), cut from
+`origin/<base_branch>` (`git fetch origin && git checkout -b
+pipeline/<slug>/<repo> origin/<base_branch>`) — never from whatever branch
+happens to be checked out. Only **test files** and `.pipeline/<slug>/` may
+change in this stage.
 
 1. **Detect the test setup** from `<repo>/package.json` `scripts.test`:
    - `shop-web`: Vitest + React Testing Library (`npm test`); tests live
@@ -212,18 +235,25 @@ source changes" (or the stated manual-repro alternative). Headless: write
    PASS, every preservation test still PASSES, no previously-passing test
    broke. Do not edit or weaken a test to make it pass; if a test itself
    is wrong, say so in `fix.md` and treat it as a Gate 3 reset.
-3. Scope check: list `git diff --stat` against the base and confirm every
-   changed non-test file is inside the fence.
+3. Scope check: list `git diff --stat origin/<base_branch>...HEAD` (the
+   base branch from `state.json`, not `develop`/`main` by default) and
+   confirm every changed non-test file is inside the fence. **The
+   non-test source diff against that base must be non-empty.** If it is
+   empty, the fix does nothing relative to the branch the PR targets
+   (usually because the bug is not on that base): stop, do not open the
+   PR, and return to Stage 1 to correct `base_branch` (Gate 1 reset).
 4. Write `<repo>/.pipeline/<slug>/fix.md`: what changed and why, before /
    after test results, scope check, weaknesses and edge cases (the
    self-critique), and a **traceability table** mapping each Expected and
    Unchanged clause from `bugfix.md` to the test(s) and code that cover it.
 5. Commit `.pipeline/<slug>/` + code on the story branch, push, and open
    the PR using the exact `gh` pattern in `requirement-pipeline` Stage 4
-   step 3 (PR body = `fix.md`). Record `pr_url` and `branch` in
-   `state.json`.
+   step 3 (PR body = `fix.md`), **but with `--base <base_branch>` from
+   `state.json`** instead of the repo's default branch. Record `pr_url` and
+   `branch` in `state.json`.
 
-**GATE 4 (`4_fix`)**: present the diff + `fix.md`. PR state is not a gate
+**GATE 4 (`4_fix`)**: present the diff **against `<base_branch>`** + `fix.md`,
+and state the PR's base branch (it must equal `base_branch`). PR state is not a gate
 (see `pipeline-gates.mdc` rule 5). Headless: write `pending_gate` and end
 the turn.
 

@@ -326,7 +326,10 @@ def _headless_prompt(
             "`1_analysis`, `2_rootcause`, `3_repro`, `4_fix` "
             "(see .cursor/rules/pipeline-bugfix.mdc). Prefer the smallest "
             "change that restores expected behavior, and make no non-test "
-            "source changes before Gate 3. The run ends when Gate 4 is "
+            "source changes before Gate 3. Choose and prove the base branch "
+            "(where the bug actually exists), cut the story branch from it "
+            "and open the PR against it (record `base_branch` in "
+            "state.json). The run ends when Gate 4 is "
             "approved, with the PR left open (never merge it).\n\n"
             + state_rule
             + restart_rule

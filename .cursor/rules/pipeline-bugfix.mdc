@@ -80,3 +80,11 @@ and `pending_gate.gate` must use exactly these keys.
    is approved, leave the PR untouched, set `stage` to `"done"`, record
    `merge_status: "not_merged"` in `state.json`, and end the turn with the
    PR URL and one line saying it is ready for a human to review and merge.
+8. **Base branch is explicit and proven.** The story branch is cut from,
+   and the PR targets, the branch where the bug actually exists
+   (`base_branch` in the story's `state.json` entry, set at Stage 1 and
+   confirmed at Gate 1). Do not build on whichever branch is checked out,
+   and do not open the PR against a different branch than the one the
+   story branch was cut from. Gate 4's diff is against `base_branch`, and
+   its non-test source diff must not be empty; if it is, the base is wrong
+   and the run goes back to Gate 1.

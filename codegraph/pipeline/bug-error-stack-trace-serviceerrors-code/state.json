@@ -5,13 +5,14 @@
   "agent_id": "agent-cfe436ac-ebe6-4470-9106-6c063516bd1c",
   "notes": [
     "Started via dashboard (Cursor SDK, local runtime) at 2026-09-29T20:49:40.481840+00:00.",
-    "Gate 1 presented: located ECS_40001 in ecom-content-stack; candidate cause is application-local.yaml ContentStack base-url defaults ending in /v3/test."
+    "Gate 1 presented: located ECS_40001 in ecom-content-stack; candidate cause is application-local.yaml ContentStack base-url defaults ending in /v3/test.",
+    "Gate 1 approved for ecom-content-stack; Stage 2 rootcause.md presented."
   ],
   "stories": {
     "ecom-content-stack": {
-      "stage": "1-analysis",
+      "stage": "2-rootcause",
       "gates": {
-        "1_analysis": null,
+        "1_analysis": "approved",
         "2_rootcause": null,
         "3_repro": null,
         "4_fix": null
@@ -19,9 +20,9 @@
       "branch": null,
       "pr_url": null,
       "pending_gate": {
-        "gate": "1_analysis",
-        "presented_at": "2026-09-29T20:55:00.000000+00:00",
-        "summary": "Analysis for ecom-content-stack: the reported serviceErrors payload (ECS_40001 / Bad request to downstream service.) is defined and emitted by ContentStackExceptionHandler.defaultBadRequestError(). Graph + file search show the local profile’s content-stack-service and content-stack-entry-service default base URLs incorrectly end in /v3/test (other envs use /v3), which forces bad requests to ContentStack under local defaults. Scope fence: only those two defaults in application-local.yaml. No source fix yet — awaiting Gate 1 approval of bugfix.md."
+        "gate": "2_rootcause",
+        "presented_at": "2026-09-29T20:52:15.666293+00:00",
+        "summary": "Root cause for ecom-content-stack: local-profile defaults for content-stack-service and content-stack-entry-service base-url incorrectly use \u2026/v3/test (Demo commit), so unset CONTENTSTACK_* env vars send clients to invalid ContentStack paths; 4xx is then correctly mapped to ECS_40001 by defaultBadRequestError(). Bug condition C = local profile + those env defaults applying. Proposed fix = restore \u2026/v3 on those two yaml defaults only. Scope fence unchanged from Gate 1. Awaiting approval of rootcause.md before any tests or source edits."
       }
     }
   }

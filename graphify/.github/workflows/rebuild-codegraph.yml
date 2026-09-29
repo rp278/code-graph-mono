@@ -1,0 +1,29 @@
+name: Rebuild codeGraph
+
+# Runs whenever a commit lands on master — which is exactly what a merged
+# PR looks like from GitHub's perspective. A change to the extractor itself (this repo) should re-run against the graphed repos too, since the extraction logic is what changed.
+#
+# OPT-IN: this does nothing unless a rebuild endpoint is configured. Set the
+# repository variable CODEGRAPH_REBUILD_URL (Settings > Secrets and variables
+# > Actions > Variables), e.g. http://<host>/api/graph/rebuild, and the
+# secret CODEGRAPH_API_TOKEN if that API requires a bearer token. Without
+# the variable the job is skipped (no failing check, no hardcoded host).
+on:
+  push:
+    branches: [master]
+
+jobs:
+  rebuild:
+    if: ${{ vars.CODEGRAPH_REBUILD_URL != '' }}
+    runs-on: ubuntu-latest
+    steps:
+      - name: Trigger codegraph rebuild
+        env:
+          REBUILD_URL: ${{ vars.CODEGRAPH_REBUILD_URL }}
+          API_TOKEN: ${{ secrets.CODEGRAPH_API_TOKEN }}
+        run: |
+          curl -sf -X POST \
+            ${API_TOKEN:+-H "Authorization: Bearer $API_TOKEN"} \
+            -H "Content-Type: application/json" \
+            -d '{"repo_id":"all"}' \
+            "$REBUILD_URL"

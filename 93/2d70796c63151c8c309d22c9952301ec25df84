@@ -1,0 +1,19 @@
+codegraph/pipeline/bug-employee-account-pdp-add-to-bag-slid/state.json
+  s_5c8f9080bb1524::t_5aba156572c84d 8-9,13,15,24-26
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.4",
+  "base_commit_sha": "932d70796c63151c8c309d22c9952301ec25df84",
+  "prompts": {},
+  "sessions": {
+    "s_5c8f9080bb1524": {
+      "agent_id": {
+        "tool": "cursor",
+        "id": "b8d58efb-b271-4d7d-bc95-0563dd908b82",
+        "model": "unknown"
+      },
+      "human_author": "Ramesh Polishetti <rp278@tmw.com>"
+    }
+  }
+}

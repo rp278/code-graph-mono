@@ -3,6 +3,7 @@ from __future__ import annotations
 
 import hashlib
 import json
+import os
 from pathlib import Path
 
 
@@ -12,8 +13,14 @@ def file_hash(path: Path) -> str:
 
 
 def cache_dir(root: Path = Path(".")) -> Path:
-    """Returns graphify-out/cache/ - creates it if needed."""
-    d = Path(root) / "graphify-out" / "cache"
+    """Returns graphify-out/cache/ - creates it if needed.
+
+    Set GRAPHIFY_CACHE_DIR to keep the cache outside the analysed repo (the
+    Docker build uses this so read-only repo mounts work). Entries are keyed by
+    file-content hash, so one shared directory is safe.
+    """
+    override = os.environ.get("GRAPHIFY_CACHE_DIR")
+    d = Path(override) if override else Path(root) / "graphify-out" / "cache"
     d.mkdir(parents=True, exist_ok=True)
     return d
 

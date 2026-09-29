@@ -66,26 +66,52 @@ Model ids: `claude-sonnet-5-5`, `claude-opus-5-5`, `gpt-5.6-sol`, `composer-2`,
 | **No Neo4j** (simplest) | Ask AI, Fix Bugs, Feature Development. Whenever the graph has no answer or is unreachable, the agents search the code themselves and say so in their artifacts. The **View Graph** screen is empty. |
 | **Local Neo4j** | Everything, including View Graph and graph-assisted analysis. |
 
-To add a local Neo4j:
-
-```bash
-docker run -d --name neo4j -p 7474:7474 -p 7687:7687 \
-  -e NEO4J_AUTH=neo4j/choose-a-password neo4j:5
-# (or install Neo4j Desktop and create a local 5.x DBMS)
-```
-
-Then set `NEO4J_PASSWORD=choose-a-password` in `codegraph/api/.env`, and:
+To add a local Neo4j, the easiest way is Docker Compose (see [Docker](#docker-optional)).
+Without Docker, install Neo4j Desktop and create a local 5.x DBMS. Then set
+`NEO4J_PASSWORD` in `codegraph/api/.env`, and build the graph:
 
 ```bash
 ./setup.sh --with-graph                         # installs the graph builder
 cd graphify
-NEO4J_PASSWORD=choose-a-password .venv/bin/python -m graphify.codegraph \
+NEO4J_PASSWORD=<your-password> .venv/bin/python -m graphify.codegraph \
   --repos ../codegraph/api/repos.local.json --push
 ```
 
 (The dashboard's **Rebuild** button does the same thing.) Check
 http://127.0.0.1:8000/health → `"neo4j":"up"`. A local build reads your local
 checkouts, so it also reflects uncommitted changes.
+
+## Docker (optional)
+
+`docker-compose.yml` runs the *infrastructure* in containers. The API and the
+pipeline agents stay on your machine on purpose: they need your git/`gh`
+credentials and toolchains, and they edit the real work repos.
+
+Set a `NEO4J_PASSWORD` (8+ characters) in `codegraph/api/.env`, then:
+
+```bash
+# Neo4j (data persists in a Docker volume)
+docker compose --env-file codegraph/api/.env up -d neo4j
+
+# Build the graph and push it to that Neo4j (repos are mounted read-only)
+docker compose --env-file codegraph/api/.env run --rm graphify
+
+# Optional: the dashboard in a container instead of `npm run dev`
+docker compose --env-file codegraph/api/.env --profile web up web
+```
+
+Notes:
+
+- The graph job uses the paths in `codegraph/api/repos.local.json` (by repo name) under
+  `TB_REPOS_DIR` (default `~/Desktop/code`). It never runs git and never writes into the repos;
+  its extraction cache lives in the `code-graph_graphify_cache` volume. If you change the
+  extractors, reset it with `docker volume rm code-graph_graphify_cache`, because cache entries
+  are keyed by file content only.
+- Ports 7474/7687 are bound to `127.0.0.1`. If another Neo4j already uses them, set
+  `NEO4J_HTTP_PORT` / `NEO4J_BOLT_PORT` in `codegraph/api/.env` and match `NEO4J_URI`.
+- `NEO4J_PASSWORD` only takes effect when the volume is first created. To change it later:
+  `docker compose down -v` (this deletes the graph; rebuild it with the `graphify` job).
+- Don't run the `web` service and a host `npm run dev` together (both use port 5173).
 
 ## GitHub access (needed for the pipelines)
 

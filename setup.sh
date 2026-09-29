@@ -129,7 +129,7 @@ if [ "$WITH_GRAPH" -eq 1 ]; then
   step "5. Graph builder (graphify) — only useful with Neo4j running"
   G="$ROOT/graphify"
   if [ ! -d "$G/.venv" ]; then "$PYTHON" -m venv "$G/.venv"; fi
-  "$G/.venv/bin/pip" install --quiet networkx tree-sitter tree-sitter-javascript tree-sitter-typescript neo4j
+  "$G/.venv/bin/pip" install --quiet networkx tree-sitter tree-sitter-javascript tree-sitter-typescript tree-sitter-java neo4j
   ok "graphify dependencies installed"
 fi
 

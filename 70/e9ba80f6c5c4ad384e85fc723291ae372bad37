@@ -1,0 +1,89 @@
+codegraph/web/src/components/RequirementsView.jsx
+  s_99c32d72d5286c::t_250072e0321f76 366-370
+  s_99c32d72d5286c::t_c27606c6833654 693
+  s_99c32d72d5286c::t_1d201b8a90e95c 3
+  s_99c32d72d5286c::t_aa1a498b51f52a 268-333,335
+graphify/graphify/codegraph.py
+  s_99c32d72d5286c::t_420184c4516dfa 184-192
+  s_99c32d72d5286c::t_265614d43b7ecf 31
+graphify/tests/test_units.py
+  s_99c32d72d5286c::t_149e8ca17303a8 1-46
+.cursor/rules/pipeline-bugfix.mdc
+  s_99c32d72d5286c::t_3f3cf9a719fcbd 50-52
+codegraph/pipeline/DESIGN.md
+  s_99c32d72d5286c::t_70dba0cba2964b 300-303
+  s_99c32d72d5286c::t_6e8a6a755cd616 383-396
+.cursor/skills/requirement-pipeline/SKILL.md
+  s_99c32d72d5286c::t_bad3e43f8cb97d 106
+  s_99c32d72d5286c::t_87ad9b02400598 42-43
+  s_99c32d72d5286c::t_178152890afc8e 21-29
+  s_99c32d72d5286c::t_8cecc73202d43b 110-111
+  s_99c32d72d5286c::t_27dd8da7fc0ef7 67-71
+  s_99c32d72d5286c::t_00821334e52cd2 121
+  s_99c32d72d5286c::t_74811122eb01d1 182
+  s_99c32d72d5286c::t_2464ffb4a24944 223-224
+  s_99c32d72d5286c::t_f6e155627d56b7 232-233
+  s_99c32d72d5286c::t_dc954d70afb2dd 161
+  s_99c32d72d5286c::t_92403308c7a890 240
+  s_99c32d72d5286c::t_e497c7c31aa26e 144-147
+  s_99c32d72d5286c::t_785b170100f37f 194
+docs/HACKATHON_DESIGN.md
+  s_99c32d72d5286c::t_cf0d75d13f0b21 340,355,393
+  s_99c32d72d5286c::t_9b182da961d46e 409-415,418
+  s_99c32d72d5286c::t_8774a03cb5199e 419
+docs/slides/build_slides.py
+  s_99c32d72d5286c::t_cf0d75d13f0b21 464,500
+graphify/graphify/extract_units.py
+  s_99c32d72d5286c::t_69f5f1a32f0ccf 1-95
+.cursor/skills/bug-fix-pipeline/SKILL.md
+  s_99c32d72d5286c::t_292cf91598e62d 133-135
+  s_99c32d72d5286c::t_881da053531af9 259-263
+  s_99c32d72d5286c::t_39f1e8efc1c942 154-155
+  s_99c32d72d5286c::t_3e8dcd8dd92131 255
+  s_99c32d72d5286c::t_c7cc2d565dcdba 223
+  s_99c32d72d5286c::t_ab25e2fa350791 177
+  s_99c32d72d5286c::t_ff4543d4852e1e 24-33
+  s_99c32d72d5286c::t_e87bd3ffa6b554 226-227
+  s_99c32d72d5286c::t_a6a7ce7bc6e1fe 52-54
+  s_99c32d72d5286c::t_043b96d8cc80f7 205-206
+.cursor/rules/pipeline-waves.mdc
+  s_99c32d72d5286c::t_b4e7ddd533125a 32
+codegraph/web/src/index.css
+  s_99c32d72d5286c::t_d6da6d7bdf12a7 870-881
+codegraph/web/src/api.js
+  s_99c32d72d5286c::t_85d9a7de340aad 64-65
+codegraph/api/src/pipeline_agent.py
+  s_99c32d72d5286c::t_0d57d2fa6b126e 715
+  s_99c32d72d5286c::t_73834da095106d 330-331
+  s_99c32d72d5286c::t_74535e043d6495 742
+  s_99c32d72d5286c::t_971176104b66c7 107-143
+  s_99c32d72d5286c::t_7a048997fdd640 668
+  s_99c32d72d5286c::t_b54533067d709b 714
+codegraph/api/src/main.py
+  s_99c32d72d5286c::t_248c8228cad057 596-602
+  s_99c32d72d5286c::t_ec0f87972cbeed 594-595
+codegraph/pipeline/bug-error-stack-trace-serviceerrors-code/ecom-content-stack/bugfix.md
+  s_99c32d72d5286c::t_e3265855432b81 1-119
+codegraph/pipeline/bug-error-stack-trace-serviceerrors-code/ecom-content-stack/fix.md
+  s_99c32d72d5286c::t_ae69a89492a5c5 1-71
+codegraph/pipeline/bug-error-stack-trace-serviceerrors-code/ecom-content-stack/repro.md
+  s_99c32d72d5286c::t_8a35bf927fd3e2 1-96
+codegraph/pipeline/bug-error-stack-trace-serviceerrors-code/ecom-content-stack/rootcause.md
+  s_99c32d72d5286c::t_0c3af899d38359 1-114
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.4",
+  "base_commit_sha": "70e9ba80f6c5c4ad384e85fc723291ae372bad37",
+  "prompts": {},
+  "sessions": {
+    "s_99c32d72d5286c": {
+      "agent_id": {
+        "tool": "cursor",
+        "id": "cf35b73d-bb00-4de2-a827-c8b55f302d72",
+        "model": "claude-sonnet-5-5"
+      },
+      "human_author": "Ramesh Polishetti <rp278@tmw.com>"
+    }
+  }
+}

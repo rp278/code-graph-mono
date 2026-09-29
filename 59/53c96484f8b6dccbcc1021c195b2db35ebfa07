@@ -1,0 +1,31 @@
+graphify/docker-entrypoint.sh
+  s_99c32d72d5286c::t_e6e0ba4b0f67be 2-5,9,11,13-25
+graphify/Dockerfile
+  s_99c32d72d5286c::t_4343d4a39d4a90 1-3,8
+SETUP.md
+  s_99c32d72d5286c::t_47dccec69ce0bb 1,4,6-30,35,38,40-42,44,46-52,54,56,58-113,123,134,136-137,146-148,150,152-154,157,164-165,168-171,175-176,180-182,198-199,203-204
+repos.manifest.json
+  s_99c32d72d5286c::t_575a4d7432e237 1-8
+setup.sh
+  s_99c32d72d5286c::t_b5423810b2cbe3 4-5,8-9,18-22,26-27,33-35,81,85-90,92-95,97-104,106,108-117,130,132-136,148
+  s_99c32d72d5286c::t_7c5087bba44d54 91,96,144-147
+  s_99c32d72d5286c::t_ba95a027c60cdc 149
+docker-compose.yml
+  s_99c32d72d5286c::t_e6e0ba4b0f67be 51-54
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.4",
+  "base_commit_sha": "5953c96484f8b6dccbcc1021c195b2db35ebfa07",
+  "prompts": {},
+  "sessions": {
+    "s_99c32d72d5286c": {
+      "agent_id": {
+        "tool": "cursor",
+        "id": "cf35b73d-bb00-4de2-a827-c8b55f302d72",
+        "model": "claude-sonnet-5-5"
+      },
+      "human_author": "Ramesh Polishetti <rp278@tmw.com>"
+    }
+  }
+}

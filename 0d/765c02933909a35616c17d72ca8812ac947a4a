@@ -1,0 +1,21 @@
+README.md
+  s_99c32d72d5286c::t_9e69f6bdc70044 2
+codegraph/web/public/logo.svg
+  s_99c32d72d5286c::t_1f0ca6bcedb147 3,8,13,17,24,32,36-38,66,71,84
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.4",
+  "base_commit_sha": "0d765c02933909a35616c17d72ca8812ac947a4a",
+  "prompts": {},
+  "sessions": {
+    "s_99c32d72d5286c": {
+      "agent_id": {
+        "tool": "cursor",
+        "id": "cf35b73d-bb00-4de2-a827-c8b55f302d72",
+        "model": "claude-sonnet-5-5"
+      },
+      "human_author": "Ramesh Polishetti <rp278@tmw.com>"
+    }
+  }
+}

@@ -6,23 +6,24 @@
   "notes": [
     "Started via dashboard (Cursor SDK, local runtime) at 2026-09-29T05:59:52.760851+00:00.",
     "Stage 1: located in tb-discovery-mfe helpers/formatters.ts slugify via graph + stack match.",
-    "Gate 1_analysis for tb-discovery-mfe approved; Stage 2 rootcause presented."
+    "Gate 1_analysis for tb-discovery-mfe approved; Stage 2 rootcause presented.",
+    "Gate 2_rootcause for tb-discovery-mfe approved; Stage 3 repro presented (2 failing bug-condition tests, 15 passing, no source changes)."
   ],
   "stories": {
     "tb-discovery-mfe": {
-      "stage": "2-rootcause",
+      "stage": "3-repro",
       "gates": {
         "1_analysis": "approved",
-        "2_rootcause": null,
+        "2_rootcause": "approved",
         "3_repro": null,
         "4_fix": null
       },
-      "branch": null,
+      "branch": "pipeline/bug-typeerror-cannot-read-properties-of/tb-discovery-mfe",
       "pr_url": null,
       "pending_gate": {
-        "gate": "2_rootcause",
-        "presented_at": "2026-09-29T06:03:30.000Z",
-        "summary": "Root cause for tb-discovery-mfe: slugify (helpers/formatters.ts:46-47) calls queryValue.toLowerCase() with no guard; undefined/non-string input throws the reported TypeError. Commit 98b94cfc5 removed the prior typeof !== 'string' → '' check. Bug condition C: typeof x !== 'string'. Postcondition P: return '' without throwing. Preservation: string inputs keep identical encodeURIComponent slug output. Proposed fix: restore that one guard only. Artifact: tb-discovery-mfe/.pipeline/bug-typeerror-cannot-read-properties-of/rootcause.md."
+        "gate": "3_repro",
+        "presented_at": "2026-09-29T06:05:30.000Z",
+        "summary": "Reproduce baseline for tb-discovery-mfe: on unfixed code, npm test -- helpers/__tests__/formatters.test.ts shows 2 failed bug-condition tests (undefined/null/non-string) with TypeError at helpers/formatters.ts:47:33 matching rootcause.md, and 15 preservation/other tests passing. git diff confirms no non-test source changes. Branch pipeline/bug-typeerror-cannot-read-properties-of/tb-discovery-mfe. Artifact: .pipeline/.../repro.md."
       }
     }
   }

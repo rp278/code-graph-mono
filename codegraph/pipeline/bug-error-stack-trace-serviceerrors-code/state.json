@@ -7,23 +7,24 @@
     "Started via dashboard (Cursor SDK, local runtime) at 2026-09-29T20:49:40.481840+00:00.",
     "Gate 1 presented: located ECS_40001 in ecom-content-stack; candidate cause is application-local.yaml ContentStack base-url defaults ending in /v3/test.",
     "Gate 1 approved for ecom-content-stack; Stage 2 rootcause.md presented.",
-    "Gate 2 approved; Stage 3 repro: JUnit added; Maven blocked by private parent POM 401; standalone assertions match hypothesis (bug FAIL, preservation PASS). Gate 3 presented."
+    "Gate 2 approved; Stage 3 repro: JUnit added; Maven blocked by private parent POM 401; standalone assertions match hypothesis (bug FAIL, preservation PASS). Gate 3 presented.",
+    "Gate 3 approved; Stage 4 fix applied (restore /v3 defaults); PR opened https://github.com/MensWearhouse/ecom-content-stack/pull/352; Gate 4 presented."
   ],
   "stories": {
     "ecom-content-stack": {
-      "stage": "3-repro",
+      "stage": "4-fix",
       "gates": {
         "1_analysis": "approved",
         "2_rootcause": "approved",
-        "3_repro": null,
+        "3_repro": "approved",
         "4_fix": null
       },
       "branch": "pipeline/bug-error-stack-trace-serviceerrors-code/ecom-content-stack",
-      "pr_url": null,
+      "pr_url": "https://github.com/MensWearhouse/ecom-content-stack/pull/352",
       "pending_gate": {
-        "gate": "3_repro",
-        "presented_at": "2026-09-29T20:54:40.763119+00:00",
-        "summary": "Reproduce for ecom-content-stack: added ContentStackLocalBaseUrlDefaultsTest encoding C/P (local CDN/Management defaults must be \u2026/v3). Maven cannot run (GCP artifact registry 401 on tb-platform-parent). Standalone run of the same predicates on the unfixed tree: 4 bug-condition FAILs showing \u2026/v3/test, 7 preservation PASSes (preview, test yaml, ECS_40001 contract). No src/main changes. Awaiting Gate 3 approval of repro.md before applying the yaml fix."
+        "gate": "4_fix",
+        "presented_at": "2026-09-29T20:56:14.213520+00:00",
+        "summary": "Fix for ecom-content-stack: restored application-local.yaml ContentStack CDN and Management base-url defaults from \u2026/v3/test to \u2026/v3 (scope fence only). Standalone predicates that failed at Gate 3 now all PASS; preservation still PASS. PR https://github.com/MensWearhouse/ecom-content-stack/pull/352 opened against develop (body = fix.md). Awaiting Gate 4 approval of the diff + fix.md; PR will remain open (pipeline does not merge)."
       }
     }
   }

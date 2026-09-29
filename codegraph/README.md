@@ -9,8 +9,8 @@ relationships → ask questions grounded in real code.
 - `api/` — Python FastAPI backend (repo registry, graph queries, rebuild trigger, Ask AI)
 - `web/` — React dashboard (React Flow graph visualization + Ask AI UI)
 
-The knowledge graph itself is built by our customized Graphify fork
-(`techfxs/graphify`) and stored in Neo4j.
+The knowledge graph itself is built by `graphify/` (in this repo) and stored in Neo4j.
+For setup, see the [root README](../README.md) and [SETUP.md](../SETUP.md).
 
 ## Quick start
 

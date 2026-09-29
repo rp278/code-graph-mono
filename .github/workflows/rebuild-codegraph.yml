@@ -1,6 +1,6 @@
 name: Rebuild codeGraph
 
-# Runs when a commit that touches the extractor (graphify/) lands on master —
+# Runs when a commit that touches the extractor (graphify/) lands on main —
 # which is what a merged PR looks like from GitHub's perspective. A change to
 # the extractor should re-run against the graphed repos, since the extraction
 # logic is what changed. (The work repos are separate repos and are not built
@@ -13,7 +13,7 @@ name: Rebuild codeGraph
 # the variable the job is skipped (no failing check, no hardcoded host).
 on:
   push:
-    branches: [master]
+    branches: [main]
     paths: ["graphify/**", ".github/workflows/rebuild-codegraph.yml"]
 
 jobs:

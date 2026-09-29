@@ -2,7 +2,7 @@
 
 This workspace is one monorepo (codegraph API + dashboard, graphify, pipeline rules)
 plus symlinked work repos that together form a cross-repo code knowledge graph with
-an agent API and dashboard. Branch `master`.
+an agent API and dashboard. Branch `main` (the work repos may use `master`).
 
 ## The repos
 

@@ -7,7 +7,6 @@
 #
 #   docker compose --env-file codegraph/api/.env up -d neo4j
 #   docker compose --env-file codegraph/api/.env run --rm graphify
-#   docker compose --env-file codegraph/api/.env --profile web up web
 name: code-graph
 
 services:
@@ -51,21 +50,6 @@ services:
       - ./codegraph/api/repos.local.json:/config/repos.json:ro
       - ${TB_REPOS_DIR:-${HOME}/Desktop/code}:/repos:ro
 
-  # Dashboard dev server (same as `cd codegraph/web && npm run dev`).
-  # It still talks to the API on the host, http://127.0.0.1:8000, from your
-  # browser. Don't run this at the same time as a host `npm run dev` (port 5173).
-  web:
-    profiles: ["web"]
-    image: node:22-slim
-    working_dir: /app
-    command: sh -c "npm ci --no-audit --no-fund && npm run dev -- --host 0.0.0.0"
-    ports:
-      - "127.0.0.1:5173:5173"
-    volumes:
-      - ./codegraph/web:/app
-      - web_node_modules:/app/node_modules
-
 volumes:
   neo4j_data:
   graphify_cache:
-  web_node_modules:

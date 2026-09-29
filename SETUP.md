@@ -83,8 +83,8 @@ checkouts, so it also reflects uncommitted changes.
 
 ## Docker (optional)
 
-`docker-compose.yml` runs the *infrastructure* in containers. The API and the
-pipeline agents stay on your machine on purpose: they need your git/`gh`
+`docker-compose.yml` runs Neo4j and the graph build in containers. The API, the
+dashboard and the pipeline agents stay on your machine on purpose: they need your git/`gh`
 credentials and toolchains, and they edit the real work repos.
 
 Set a `NEO4J_PASSWORD` (8+ characters) in `codegraph/api/.env`, then:
@@ -95,9 +95,6 @@ docker compose --env-file codegraph/api/.env up -d neo4j
 
 # Build the graph and push it to that Neo4j (repos are mounted read-only)
 docker compose --env-file codegraph/api/.env run --rm graphify
-
-# Optional: the dashboard in a container instead of `npm run dev`
-docker compose --env-file codegraph/api/.env --profile web up web
 ```
 
 Notes:
@@ -111,7 +108,6 @@ Notes:
   `NEO4J_HTTP_PORT` / `NEO4J_BOLT_PORT` in `codegraph/api/.env` and match `NEO4J_URI`.
 - `NEO4J_PASSWORD` only takes effect when the volume is first created. To change it later:
   `docker compose down -v` (this deletes the graph; rebuild it with the `graphify` job).
-- Don't run the `web` service and a host `npm run dev` together (both use port 5173).
 
 ## GitHub access (needed for the pipelines)
 

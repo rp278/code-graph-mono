@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="images/codegraph-logo-transparent.png" alt="CodeGraph" width="280">
+  <img src="codegraph/web/public/logo.svg" alt="CodeGraph" width="160">
 </p>
 
 # CodeGraph

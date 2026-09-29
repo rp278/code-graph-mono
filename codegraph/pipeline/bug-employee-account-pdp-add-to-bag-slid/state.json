@@ -5,13 +5,14 @@
   "agent_id": "agent-2b076165-9e0e-44f4-adf1-6d6774bc1165",
   "notes": [
     "Started via dashboard (Cursor SDK, local runtime) at 2026-09-29T22:23:43.412186+00:00.",
-    "Gate 1 presented: located loyaltyMember free-ship overrides on PDP/ATB in tb-discovery-mfe; minicart mapper in tb-common-mfe already correct via shippingCharges; base_branch=main."
+    "Gate 1 presented: located loyaltyMember free-ship overrides on PDP/ATB in tb-discovery-mfe; minicart mapper in tb-common-mfe already correct via shippingCharges; base_branch=main.",
+    "Gate 1 approved for tb-discovery-mfe; Stage 2 rootcause.md presented."
   ],
   "stories": {
     "tb-discovery-mfe": {
-      "stage": "1-analysis",
+      "stage": "2-rootcause",
       "gates": {
-        "1_analysis": null,
+        "1_analysis": "approved",
         "2_rootcause": null,
         "3_repro": null,
         "4_fix": null
@@ -20,9 +21,9 @@
       "branch": null,
       "pr_url": null,
       "pending_gate": {
-        "gate": "1_analysis",
-        "presented_at": "2026-09-29T22:27:18.652492+00:00",
-        "summary": "Analysis for tb-discovery-mfe: Employee+PF accounts are classified as loyaltyMember, so PDP ShippingCard/ShippingPromoBanner and ATB slideout force free-shipping messaging even when cart shippingCharges > 0 (below threshold). Minicart correctly hides the message via mapShippingBannerInfo. Provisional scope is the loyalty overrides in PdpComponent, GiftCardLP, ShippingCard, and PdpDetailsLayout on base branch main. Open question: prefer trusting cart charges over inventing an employee flag (none found in these repos)."
+        "gate": "2_rootcause",
+        "presented_at": "2026-09-29T22:29:16.750820+00:00",
+        "summary": "Root cause: PDP/ATB force free-shipping UI for every loyaltyMember (ATB overrides shippingBannerInfo to 100%/0; ShippingCard FREE via isPfrMember; signed no-minimum promo), while Employee+PF below threshold still have shippingCharges > 0 and minicart correctly shows non-qualified progress. Proposed fix: remove loyalty overrides and drive FREE/promo from cart eligibility (same truth as mapper), not PF enrollment alone. Scope remains tb-discovery-mfe only; base main."
       }
     }
   },

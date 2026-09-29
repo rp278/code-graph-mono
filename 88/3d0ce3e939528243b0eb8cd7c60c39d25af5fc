@@ -1,0 +1,23 @@
+README.md
+  s_99c32d72d5286c::t_df07f026181f74 52,55-58,61,72
+SETUP.md
+  s_99c32d72d5286c::t_df07f026181f74 12-13,26,55,69-70,73-75,78-87,145-146,148-150,152,154-157,159,161-166,193
+setup.sh
+  s_99c32d72d5286c::t_df07f026181f74 95
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.4",
+  "base_commit_sha": "883d0ce3e939528243b0eb8cd7c60c39d25af5fc",
+  "prompts": {},
+  "sessions": {
+    "s_99c32d72d5286c": {
+      "agent_id": {
+        "tool": "cursor",
+        "id": "cf35b73d-bb00-4de2-a827-c8b55f302d72",
+        "model": "claude-sonnet-5-5"
+      },
+      "human_author": "Ramesh Polishetti <rp278@tmw.com>"
+    }
+  }
+}

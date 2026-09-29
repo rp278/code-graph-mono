@@ -45,8 +45,14 @@ export const api = {
   getRequirement: (slug) => request(`/api/requirements/${encodeURIComponent(slug)}`),
   startRequirement: (requirement, kind = 'feature', repos = []) =>
     request('/api/requirements', { method: 'POST', body: { requirement, kind, repos } }),
-  rerunRequirement: (slug) =>
-    request(`/api/requirements/${encodeURIComponent(slug)}/rerun`, { method: 'POST' }),
+  pauseRequirement: (slug) =>
+    request(`/api/requirements/${encodeURIComponent(slug)}/pause`, { method: 'POST' }),
+  resumeRequirement: (slug) =>
+    request(`/api/requirements/${encodeURIComponent(slug)}/resume`, { method: 'POST' }),
+  restartRequirement: (slug) =>
+    request(`/api/requirements/${encodeURIComponent(slug)}/restart`, { method: 'POST' }),
+  deleteRequirement: (slug) =>
+    request(`/api/requirements/${encodeURIComponent(slug)}`, { method: 'DELETE' }),
   respondToRequirement: (slug, message) =>
     request(`/api/requirements/${encodeURIComponent(slug)}/respond`, {
       method: 'POST',

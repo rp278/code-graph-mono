@@ -754,10 +754,49 @@ body {
 .req-detail { max-width: 760px; display: flex; flex-direction: column; gap: 18px; }
 .req-detail-header { display: flex; align-items: center; gap: 12px; }
 .req-detail-header h2 { margin: 0; font-size: 17px; }
-.rerun-of { font-size: 12px; }
-.rerun-btn { margin-left: auto; }
-.rerun-btn:disabled { opacity: 0.45; cursor: default; }
-.rerun-btn:disabled:hover { color: var(--muted); border-color: var(--border); }
+.req-actions { margin-left: auto; display: flex; gap: 8px; }
+.req-action-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  height: 32px;
+  padding: 0 14px;
+  background: var(--panel-2);
+  color: var(--muted);
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 600;
+  line-height: 1;
+  cursor: pointer;
+}
+.req-action-icon { width: 14px; height: 14px; flex: none; }
+.req-action-btn:not(:disabled):hover { color: var(--text); border-color: var(--accent); }
+.req-action-btn.danger:not(:disabled):hover { color: #f87171; border-color: #f87171; }
+.req-action-btn:disabled { opacity: 0.45; cursor: default; }
+/* Icon-only action (Pause / Resume) beside the run state pill: same 32px height. */
+.req-icon-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  padding: 0;
+  background: var(--panel-2);
+  color: var(--muted);
+  border: 1px solid var(--border);
+  border-radius: 50%;
+  cursor: pointer;
+}
+.req-icon-btn .req-action-icon { width: 14px; height: 14px; }
+.req-icon-btn:not(:disabled):hover { color: var(--text); border-color: var(--accent); }
+.req-icon-btn:disabled { opacity: 0.45; cursor: default; }
+
+/* Read-only run state ("Running…", "Paused") in the same pill as the action buttons. */
+.req-action-btn.state { cursor: default; }
+.req-action-btn.state.running { color: #a5f3fc; background: rgba(34, 211, 238, 0.12); border-color: rgba(34, 211, 238, 0.35); }
+.req-action-btn.state.paused { color: #fde68a; background: rgba(251, 191, 36, 0.14); border-color: rgba(251, 191, 36, 0.4); }
+.req-action-btn.state .spinner { width: 14px; height: 14px; }
 .req-detail-text { margin: 0; color: var(--text); line-height: 1.5; font-size: 14px; }
 
 .story-cards { display: flex; flex-direction: column; gap: 10px; }

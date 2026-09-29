@@ -15,7 +15,6 @@ const BUG_GATE_LABELS = {
   '2_rootcause': 'Root cause',
   '3_repro': 'Reproduce',
   '4_fix': 'Fix',
-  '5_qa': 'QA checklist',
 };
 
 function gatesFor(kind) {
@@ -29,8 +28,65 @@ const STATUS_META = {
   running: { label: 'Running…', cls: 'run-status-active' },
   waiting_approval: { label: 'Waiting on you', cls: 'run-status-waiting' },
   done: { label: 'Done', cls: 'run-status-done' },
+  paused: { label: 'Paused', cls: 'muted' },
   error: { label: 'Error', cls: 'run-status-error' },
 };
+
+// Same 24x24 stroke icon set for every run action, so the pills line up.
+function ActionIcon({ children }) {
+  return (
+    <svg
+      className="req-action-icon"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden="true"
+    >
+      {children}
+    </svg>
+  );
+}
+
+function PauseIcon() {
+  return (
+    <ActionIcon>
+      <rect x="6" y="4" width="4" height="16" rx="1" />
+      <rect x="14" y="4" width="4" height="16" rx="1" />
+    </ActionIcon>
+  );
+}
+
+function PlayIcon() {
+  return (
+    <ActionIcon>
+      <polygon points="6 3 20 12 6 21 6 3" />
+    </ActionIcon>
+  );
+}
+
+function RestartIcon() {
+  return (
+    <ActionIcon>
+      <path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8" />
+      <path d="M3 3v5h5" />
+    </ActionIcon>
+  );
+}
+
+function TrashIcon() {
+  return (
+    <ActionIcon>
+      <path d="M3 6h18" />
+      <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6" />
+      <path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
+      <path d="M10 11v6" />
+      <path d="M14 11v6" />
+    </ActionIcon>
+  );
+}
 
 function StatusPill({ status }) {
   const meta = STATUS_META[status] || STATUS_META.idle;
@@ -58,7 +114,9 @@ function GateTrack({ gates, kind }) {
 }
 
 // Full-width labeled step bar for the requirement detail view — one step
-// per gate plus a synthetic final "Merged" step. A step is:
+// per gate, plus a synthetic final "Merged" step for feature runs only
+// (bug runs never merge: they end at an open PR once the last gate is
+// approved). A step is:
 //   done      — gate approved (or, for the Merged step, merge_status
 //               === 'merged')
 //   waiting   — gate has a pending_gate marker, or is pending_reapproval
@@ -88,18 +146,20 @@ function computeStageSteps(
     return { key: g, label: labels[g], status };
   });
 
-  const merged = story?.merge_status === 'merged';
-  steps.push({
-    key: 'merge',
-    label: 'Merged',
-    status: merged ? 'done' : 'upcoming',
-  });
+  if (kind !== 'bug') {
+    const merged = story?.merge_status === 'merged';
+    steps.push({
+      key: 'merge',
+      label: 'Merged',
+      status: merged ? 'done' : 'upcoming',
+    });
+  }
 
   // Only skip-ahead past a pending_gate if it is the gate the user just
   // approved. If the agent has already written the *next* gate (e.g.
   // 5_qa) while the turn is still wrapping up, that new pending_gate
-  // is NOT approved yet — spinning Merged and hiding the QA window
-  // was the snap-back bug.
+  // is NOT approved yet — spinning the following step and hiding the
+  // open gate was the snap-back bug.
   const agentBusy = runStatus === 'running' || runStatus === 'starting';
   if (agentBusy && isWorking) {
     const pendingKey = story?.pending_gate?.gate;
@@ -255,7 +315,16 @@ function StoryCard({
   );
 }
 
-function RequirementDetail({ slug, onRespond, responding, onRerun }) {
+function RequirementDetail({
+  slug,
+  onRespond,
+  responding,
+  onPause,
+  onResume,
+  onRestart,
+  onDelete,
+  refreshKey,
+}) {
   const [detail, setDetail] = useState(null);
   const [error, setError] = useState(null);
   const [revisionDrafts, setRevisionDrafts] = useState({});
@@ -266,6 +335,8 @@ function RequirementDetail({ slug, onRespond, responding, onRerun }) {
   // (disk `pending_gate` isn't rewritten until the turn ends).
   const [dismissedPending, setDismissedPending] = useState(false);
   const dismissedGateRef = useRef(null);
+  // Pause was clicked and is taking effect (the agent stops at its next safe point).
+  const [pausing, setPausing] = useState(false);
 
   const load = useCallback(async () => {
     try {
@@ -281,10 +352,23 @@ function RequirementDetail({ slug, onRespond, responding, onRerun }) {
     setDismissedPending(false);
     dismissedGateRef.current = null;
     load();
-  }, [load]);
+  }, [load, refreshKey]);
 
   const isBusy =
     responding || detail?.run_status === 'running' || detail?.run_status === 'starting';
+  const isRunning = detail?.run_status === 'running' || detail?.run_status === 'starting';
+  const isPaused = detail?.run_status === 'paused';
+
+  useEffect(() => {
+    if (!isRunning) setPausing(false);
+  }, [isRunning]);
+
+  const pauseRun = async () => {
+    setPausing(true);
+    const ok = await onPause(slug);
+    if (!ok) setPausing(false);
+    else load();
+  };
 
   // Re-show the panel only once the gate the user just acted on is
   // gone from disk (replaced by the next gate, or cleared because the
@@ -436,23 +520,72 @@ function RequirementDetail({ slug, onRespond, responding, onRerun }) {
     <div className="req-detail">
       <div className="req-detail-header">
         <h2 className="mono">{detail.slug}</h2>
-        <StatusPill status={detail.run_status} />
-        {detail.state.rerun_of && (
-          <span className="muted rerun-of">rerun of {detail.state.rerun_of}</span>
+        {isRunning ? (
+          <>
+            <span className="req-action-btn state running" role="status">
+              <span className="spinner" />
+              {pausing ? 'Pausing…' : 'Running…'}
+            </span>
+            <button
+              type="button"
+              className="req-icon-btn"
+              onClick={pauseRun}
+              disabled={pausing}
+              aria-label="Pause"
+              title="Pause: stop the agent where it is. You can resume, restart or delete it."
+            >
+              <PauseIcon />
+            </button>
+          </>
+        ) : isPaused ? (
+          <>
+            <span className="req-action-btn state paused" role="status">
+              <PauseIcon />
+              Paused
+            </span>
+            <button
+              type="button"
+              className="req-icon-btn"
+              onClick={() => onResume(slug)}
+              aria-label="Resume"
+              title="Resume: continue with the same agent. It re-checks what it had finished first."
+            >
+              <PlayIcon />
+            </button>
+          </>
+        ) : (
+          <StatusPill status={detail.run_status} />
         )}
-        <button
-          type="button"
-          className="tab-chip rerun-btn"
-          onClick={() => onRerun(slug)}
-          disabled={isBusy}
-          title={
-            isBusy
-              ? 'Wait for the current step to finish'
-              : 'Start a new run from this same report (this run is kept as-is)'
-          }
-        >
-          ↻ Rerun
-        </button>
+        <div className="req-actions">
+          <button
+            type="button"
+            className="req-action-btn"
+            onClick={() => onRestart(slug)}
+            disabled={isBusy}
+            title={
+              isBusy
+                ? 'Wait for the current step to finish'
+                : 'Start this run over from Stage 1 with all gates cleared (same slug, same report)'
+            }
+          >
+            <RestartIcon />
+            Restart
+          </button>
+          <button
+            type="button"
+            className="req-action-btn danger"
+            onClick={() => onDelete(slug)}
+            disabled={isBusy}
+            title={
+              isBusy
+                ? 'Wait for the current step to finish'
+                : 'Delete this run (branches and PRs in the repos are kept)'
+            }
+          >
+            <TrashIcon />
+            Delete
+          </button>
+        </div>
       </div>
       {(detail.run_status === 'running' || detail.run_status === 'starting') && (
         <div className="live-status-ticker">
@@ -582,7 +715,7 @@ function RequirementDetail({ slug, onRespond, responding, onRerun }) {
             disabled={isBusy || !updateText.trim()}
             onClick={sendUpdate}
           >
-            {isBusy ? '…' : 'Submit change & rerun'}
+            {isBusy ? '…' : 'Submit change'}
           </button>
         </div>
       )}
@@ -637,6 +770,7 @@ export default function RequirementsView({ kind = 'feature', repos = [] }) {
   const [bugDetails, setBugDetails] = useState('');
   const [bugRepos, setBugRepos] = useState([]);
   const [starting, setStarting] = useState(false);
+  const [refreshKey, setRefreshKey] = useState(0);
   const [startError, setStartError] = useState(null);
   const [responding, setResponding] = useState(false);
   const pollRef = useRef(null);
@@ -698,15 +832,15 @@ export default function RequirementsView({ kind = 'feature', repos = [] }) {
     }
   };
 
-  // Start a fresh run from an existing one's original report. The old run
-  // stays as it was; the new one is selected so its progress is visible.
-  const rerun = async (slug) => {
+  // Start the SAME run over from Stage 1: same slug and report, every gate
+  // cleared, fresh agent. The repos are not cleaned up.
+  const restart = async (slug) => {
     if (starting) return;
-    const what = kind === 'bug' ? 'bug' : 'requirement';
     if (
       !window.confirm(
-        `Rerun this ${what}?\n\nThis starts a NEW pipeline run from the same report, ` +
-          'with its own branches and approval gates. The current run is left untouched.'
+        'Restart this run from scratch?\n\nAll gates are cleared and a new agent starts at ' +
+          'Stage 1 on the same report. Branches, PRs and files already in the repos are kept ' +
+          'and left alone.'
       )
     ) {
       return;
@@ -714,9 +848,64 @@ export default function RequirementsView({ kind = 'feature', repos = [] }) {
     setStarting(true);
     setStartError(null);
     try {
-      const r = await api.rerunRequirement(slug);
+      await api.restartRequirement(slug);
       await loadList();
-      setSelectedSlug(r.slug);
+      setSelectedSlug(slug);
+      setRefreshKey((k) => k + 1);
+    } catch (e) {
+      setStartError(e.message);
+    } finally {
+      setStarting(false);
+    }
+  };
+
+  // Pause: cancel the agent's in-flight step. Returns true if the request went through.
+  const pause = async (slug) => {
+    setStartError(null);
+    try {
+      await api.pauseRequirement(slug);
+      await loadList();
+      return true;
+    } catch (e) {
+      setStartError(e.message);
+      return false;
+    }
+  };
+
+  // Resume a paused run with the same agent.
+  const resume = async (slug) => {
+    if (starting) return;
+    setStarting(true);
+    setStartError(null);
+    try {
+      await api.resumeRequirement(slug);
+      await loadList();
+      setSelectedSlug(slug);
+      setRefreshKey((k) => k + 1);
+    } catch (e) {
+      setStartError(e.message);
+    } finally {
+      setStarting(false);
+    }
+  };
+
+  // Delete a run's record. Repos are not touched.
+  const deleteRun = async (slug) => {
+    if (starting) return;
+    if (
+      !window.confirm(
+        `Delete ${slug}?\n\nThis removes the run and its history from the dashboard. ` +
+          'It cannot be undone. Branches, PRs and files already in the repos are NOT removed.'
+      )
+    ) {
+      return;
+    }
+    setStarting(true);
+    setStartError(null);
+    try {
+      await api.deleteRequirement(slug);
+      setSelectedSlug(null);
+      await loadList();
     } catch (e) {
       setStartError(e.message);
     } finally {
@@ -842,7 +1031,11 @@ export default function RequirementsView({ kind = 'feature', repos = [] }) {
             slug={selectedSlug}
             onRespond={respond}
             responding={responding}
-            onRerun={rerun}
+            onPause={pause}
+            onResume={resume}
+            onRestart={restart}
+            onDelete={deleteRun}
+            refreshKey={refreshKey}
           />
         ) : (
           <div className="empty-state">

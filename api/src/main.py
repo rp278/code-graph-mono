@@ -468,15 +468,62 @@ def start_requirement(body: RequirementIn) -> dict[str, Any]:
         raise HTTPException(400, str(e))
 
 
-@app.post("/api/requirements/{slug}/rerun", status_code=201, dependencies=[auth])
-def rerun_requirement(slug: str) -> dict[str, Any]:
-    """Start a fresh run from an existing run's original report.
+@app.post("/api/requirements/{slug}/pause", dependencies=[auth])
+def pause_requirement(slug: str) -> dict[str, Any]:
+    """Pause a run that is mid-turn (cancels the agent's in-flight step).
 
-    New slug, new agent, new branches; the source run is untouched. 404 if
-    the source doesn't exist, 409 if it is still mid-turn.
+    404 if the run doesn't exist, 409 if it isn't running.
     """
     try:
-        return pipeline_agent.rerun_requirement(slug)
+        return pipeline_agent.pause_requirement(slug)
+    except pipeline_agent.PipelineAgentError as e:
+        msg = str(e)
+        if msg.startswith("no such requirement run"):
+            raise HTTPException(404, msg)
+        raise HTTPException(409, msg)
+
+
+@app.post("/api/requirements/{slug}/resume", dependencies=[auth])
+def resume_requirement(slug: str) -> dict[str, Any]:
+    """Resume a paused run with the same agent. 404 if missing, 409 if not paused."""
+    try:
+        return pipeline_agent.resume_requirement(slug)
+    except pipeline_agent.PipelineAgentError as e:
+        msg = str(e)
+        if msg.startswith("no such requirement run"):
+            raise HTTPException(404, msg)
+        if "not paused" in msg:
+            raise HTTPException(409, msg)
+        raise HTTPException(400, msg)
+
+
+@app.delete("/api/requirements/{slug}", dependencies=[auth])
+def delete_requirement(slug: str) -> dict[str, Any]:
+    """Delete a run's record. Repos are not touched (branches and PRs stay).
+
+    404 if the run doesn't exist, 409 if it is still mid-turn.
+    """
+    try:
+        return pipeline_agent.delete_requirement(slug)
+    except pipeline_agent.PipelineAgentError as e:
+        msg = str(e)
+        if msg.startswith("no such requirement run"):
+            raise HTTPException(404, msg)
+        if "still working" in msg:
+            raise HTTPException(409, msg)
+        raise HTTPException(400, msg)
+
+
+@app.post("/api/requirements/{slug}/restart", status_code=201, dependencies=[auth])
+def restart_requirement(slug: str) -> dict[str, Any]:
+    """Restart a run from scratch under the SAME slug.
+
+    Clears every gate and starts a fresh agent at Stage 1 on the stored
+    report. Repos are not cleaned up (earlier branches stay). 404 if the run
+    doesn't exist, 409 if it is still mid-turn.
+    """
+    try:
+        return pipeline_agent.restart_requirement(slug)
     except pipeline_agent.PipelineAgentError as e:
         msg = str(e)
         if msg.startswith("no such requirement run"):

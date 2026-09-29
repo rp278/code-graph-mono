@@ -28,6 +28,7 @@ from __future__ import annotations
 import json
 import os
 import re
+import shutil
 import threading
 import traceback
 from datetime import datetime, timezone
@@ -125,7 +126,7 @@ def _derive_run_status(state: dict[str, Any], cached: Optional[str]) -> str:
     mid-turn" 400 guard in respond_to_requirement -- confusing/looks
     like repeated errors even though nothing was actually broken.
     """
-    if cached in ("running", "starting"):
+    if cached in ("running", "starting", "paused"):
         return cached
     stories = state.get("stories", {})
     if any(s.get("pending_gate") for s in stories.values()):
@@ -251,6 +252,7 @@ def _headless_prompt(
     slug: str,
     kind: str = "feature",
     repo_hints: Optional[list[str]] = None,
+    restart: Optional[dict[str, Any]] = None,
 ) -> str:
     common = (
         "HEADLESS_MODE: true\n\n"
@@ -263,6 +265,33 @@ def _headless_prompt(
         "story's entry in state.json and end your turn, rather than "
         "asking a question and waiting.\n\n"
     )
+    restart_rule = ""
+    if restart:
+        old = restart.get("previous_branches") or []
+        old_line = (
+            "Branches left behind by earlier attempts: "
+            + ", ".join(f"`{b}`" for b in old)
+            + ". "
+            if old
+            else "No earlier branch was recorded. "
+        )
+        restart_rule = (
+            f"THIS IS RESTART #{restart['attempt'] - 1} (attempt {restart['attempt']}) "
+            "of this run. Every gate was reset and the earlier agent's "
+            "context was discarded: start again at Stage 1 / Gate 1 and treat "
+            "anything an earlier attempt wrote as untrusted history, not as "
+            "evidence. The repos were deliberately NOT cleaned up. "
+            + old_line
+            + "Do NOT delete, reset, force-push or build on those branches, "
+            "and never discard uncommitted changes. Before you create your "
+            "story branch, make sure the checkout is on its base branch (if it "
+            "is on a leftover `pipeline/...` branch, switch back to the branch "
+            "that one was cut from — `git reflog` shows it — and if you cannot "
+            "tell which, say so under Open questions at Gate 1). Cut a NEW "
+            f"story branch with the suffix `-r{restart['attempt']}` appended to "
+            "the usual name, and write fresh artifacts under "
+            f"`.pipeline/{slug}/` on it.\n\n"
+        )
     state_rule = (
         f"Use slug `{slug}` exactly — it has already been reserved and a "
         f"bootstrap state.json created for it at "
@@ -294,11 +323,13 @@ def _headless_prompt(
             "(.cursor/skills/bug-fix-pipeline/SKILL.md) for the bug report "
             "below. This is a bug-fix run, not a new-feature run: its "
             "state.json has `\"kind\": \"bug\"` and its gates are "
-            "`1_analysis`, `2_rootcause`, `3_repro`, `4_fix`, `5_qa` "
+            "`1_analysis`, `2_rootcause`, `3_repro`, `4_fix` "
             "(see .cursor/rules/pipeline-bugfix.mdc). Prefer the smallest "
             "change that restores expected behavior, and make no non-test "
-            "source changes before Gate 3.\n\n"
+            "source changes before Gate 3. The run ends when Gate 4 is "
+            "approved, with the PR left open (never merge it).\n\n"
             + state_rule
+            + restart_rule
             + headless_rule
             + graph_rule
             + hint_line
@@ -311,6 +342,7 @@ def _headless_prompt(
         "(.cursor/skills/requirement-pipeline/SKILL.md) for the following "
         "free-text requirement. "
         + state_rule
+        + restart_rule
         + headless_rule
         + f"Requirement:\n{requirement_text}"
     )
@@ -418,8 +450,15 @@ def _run_one_turn(slug: str, agent: Any, message: str) -> Optional[str]:
             _runs.setdefault(slug, {})
             _runs[slug]["status"] = "running"
             _runs[slug]["error"] = None
+            _runs[slug].pop("pause_requested", None)
         _set_live_status(slug, "Starting…")
         run = agent.send(message)
+        with _runs_lock:
+            _runs[slug]["run"] = run
+            pause_now = bool(_runs[slug].get("pause_requested"))
+        if pause_now:
+            # Pause was clicked while the turn was still starting up.
+            _cancel_run_quietly(run)
         # Iterate the stream ourselves (instead of just run.wait()) so the
         # dashboard has something to show while a turn is in flight --
         # a single turn can easily take minutes across several tool
@@ -432,6 +471,18 @@ def _run_one_turn(slug: str, agent: Any, message: str) -> Optional[str]:
                 _set_live_status(slug, desc)
         result = run.wait()
         _set_live_status(slug, None)
+        with _runs_lock:
+            was_paused = bool(_runs[slug].pop("pause_requested", False))
+            _runs[slug].pop("run", None)
+            res_status = getattr(result, "status", None)
+            # A pause that lost the race with a turn finishing normally (e.g. it
+            # just wrote a pending_gate) is ignored: the run carries on as usual.
+            if res_status == "cancelled" or (was_paused and res_status not in ("finished", None)):
+                # Paused by the user: not an error, and not "done". Queued
+                # responses are kept and are sent after the run is resumed.
+                _runs[slug]["status"] = "paused"
+                _runs[slug]["error"] = None
+                return None
         if getattr(result, "status", None) == "error":
             with _runs_lock:
                 dropped = len(_runs[slug].get("queued") or [])
@@ -465,6 +516,13 @@ def _run_one_turn(slug: str, agent: Any, message: str) -> Optional[str]:
         next_message = None
         with _runs_lock:
             _runs.setdefault(slug, {})
+            _runs[slug].pop("run", None)
+            if _runs[slug].pop("pause_requested", False):
+                # Cancelling can make the event stream raise; that is the
+                # pause taking effect, not a failure.
+                _runs[slug]["status"] = "paused"
+                _runs[slug]["error"] = None
+                return None
             _runs[slug]["status"] = "error"
             _runs[slug]["error"] = f"{e}\n{traceback.format_exc()[-2000:]}"
             _drop_pending_responses(slug)
@@ -504,7 +562,6 @@ def start_requirement(
     requirement_text: str,
     kind: str = "feature",
     repos: Optional[list[str]] = None,
-    rerun_of: Optional[str] = None,
 ) -> dict[str, Any]:
     api_key = _cursor_api_key()
     if not api_key:
@@ -542,9 +599,6 @@ def start_requirement(
     }
     if repo_hints:
         state["repo_hints"] = repo_hints
-    if rerun_of:
-        state["rerun_of"] = rerun_of
-        state["notes"].append(f"Rerun of '{rerun_of}'.")
     _write_state(slug, state)
 
     with _runs_lock:
@@ -557,32 +611,189 @@ def start_requirement(
     return {"slug": slug, "agent_id": agent_id, "status": "starting"}
 
 
-def rerun_requirement(slug: str) -> dict[str, Any]:
-    """Start a brand-new run from an existing run's original report.
+def _cancel_run_quietly(run: Any) -> None:
+    """Ask the SDK to cancel a run. An already-finished run raises
+    UnsupportedRunOperationError; that just means there is nothing to stop."""
+    try:
+        run.cancel()
+    except Exception:  # noqa: BLE001
+        pass
 
-    The new run gets its own slug, agent, branches and gates -- the old
-    run and its history are left exactly as they were. Uses the stored
-    `requirement` text (for a bug, the full intake report), `kind` and
-    `repo_hints`. Refused while the source run is still mid-turn, since
-    both agents would work in the same repo checkouts at once.
+
+_RESUME_MESSAGE = (
+    "The user paused this run while you were working and has now resumed it. "
+    "Your last step may have been cut off part-way. Before continuing, re-read "
+    "this run's state.json and check the repo (`git status`, `git log`, the "
+    "`.pipeline/<slug>/` artifacts) to see what was actually finished, redo "
+    "anything half-done, and then carry on from where you were. Gate rules are "
+    "unchanged: still stop at each gate for approval, and never merge."
+)
+
+
+def pause_requirement(slug: str) -> dict[str, Any]:
+    """Pause a run that is mid-turn by cancelling its in-flight SDK run.
+
+    The agent stops where it is; its conversation, `state.json` and the repos
+    are left as they are (a step may be half-finished, and the resume message
+    tells the agent to check). Responses queued meanwhile are kept and sent
+    after Resume. Idempotent-ish: pausing a run that is not running is refused.
     """
+    _read_state(slug)  # raises "no such requirement run" if missing
+    with _runs_lock:
+        entry = _runs.get(slug) or {}
+        if entry.get("status") not in ("running", "starting"):
+            raise PipelineAgentError(f"'{slug}' is not running, so there is nothing to pause")
+        entry["pause_requested"] = True
+        run = entry.get("run")
+    _set_live_status(slug, "Pausing…")
+    if run is not None:
+        # If the turn is still starting up (`run` not created yet), the turn
+        # thread sees `pause_requested` and cancels as soon as it has the run.
+        _cancel_run_quietly(run)
+    return {"slug": slug, "status": "pausing"}
+
+
+def resume_requirement(slug: str) -> dict[str, Any]:
+    """Resume a paused run: same agent, same conversation, with a message
+    telling it to re-check what it had finished before the pause."""
+    _read_state(slug)
+    with _runs_lock:
+        status = (_runs.get(slug) or {}).get("status")
+    if status != "paused":
+        raise PipelineAgentError(f"'{slug}' is not paused")
+    return respond_to_requirement(slug, _RESUME_MESSAGE)
+
+
+_SLUG_RE = re.compile(r"^[a-z0-9][a-z0-9-]*$")
+
+
+def delete_requirement(slug: str) -> dict[str, Any]:
+    """Delete a run's record (`codegraph/pipeline/<slug>/`).
+
+    Only the run record goes. The repos are deliberately NOT touched: any
+    branch, PR or `.pipeline/<slug>/` files an attempt left behind stay
+    where they are. Refused while the run is mid-turn, since an in-flight
+    agent can't be stopped and would just recreate state.json. The slug is
+    validated and the resolved path must sit directly inside PIPELINE_DIR.
+    """
+    if not _SLUG_RE.match(slug or ""):
+        raise PipelineAgentError(f"no such requirement run: '{slug}'")
+    _read_state(slug)  # raises "no such requirement run" if missing
+    run_dir = (PIPELINE_DIR / slug).resolve()
+    if run_dir.parent != PIPELINE_DIR.resolve():
+        raise PipelineAgentError(f"no such requirement run: '{slug}'")
+    with _runs_lock:
+        cached = _runs.get(slug, {}).get("status")
+        if cached in ("running", "starting"):
+            raise PipelineAgentError(
+                f"'{slug}' is still working -- wait for it to pause at a gate "
+                "before deleting it"
+            )
+        shutil.rmtree(run_dir)
+        _runs.pop(slug, None)
+    return {"slug": slug, "deleted": True}
+
+
+def restart_requirement(slug: str) -> dict[str, Any]:
+    """Restart a run from scratch, keeping its slug and original report.
+
+    Every gate is cleared and a brand-new agent (fresh context) starts at
+    Stage 1. The repos are deliberately NOT cleaned up: the earlier
+    attempt's branches, PRs and `.pipeline/<slug>/` files stay where they
+    are (recorded under `restarts` in state.json and passed to the new
+    agent, which is told to leave them alone and cut a new `-r<N>` branch).
+    Refused while the run is mid-turn, since an in-flight agent can't be
+    stopped and would keep writing to the repos. The earlier agent is just
+    abandoned, not closed: it is idle at a gate and holds nothing.
+    """
+    api_key = _cursor_api_key()
+    if not api_key:
+        raise PipelineAgentError(
+            "CURSOR_API_KEY is not set in codegraph/api/.env — get one from "
+            "https://cursor.com/dashboard/integrations"
+        )
     state = _read_state(slug)  # raises "no such requirement run" if missing
     with _runs_lock:
         cached = _runs.get(slug, {}).get("status")
     if cached in ("running", "starting"):
         raise PipelineAgentError(
-            f"'{slug}' is still working -- wait for it to pause or finish "
-            "before rerunning it"
+            f"'{slug}' is still working -- wait for it to pause at a gate "
+            "before restarting it"
         )
     text = state.get("requirement") or ""
     if not text.strip():
-        raise PipelineAgentError(f"'{slug}' has no stored requirement text to rerun")
-    return start_requirement(
-        text,
-        kind=state.get("kind") or "feature",
-        repos=state.get("repo_hints") or [],
-        rerun_of=slug,
+        raise PipelineAgentError(f"'{slug}' has no stored requirement text to restart")
+
+    kind = state.get("kind") or "feature"
+    repo_hints = state.get("repo_hints") or []
+
+    stories = state.get("stories") or {}
+    restarts = list(state.get("restarts") or [])
+    restarts.append(
+        {
+            "at": _now(),
+            "agent_id": state.get("agent_id"),
+            "stories": {
+                repo: {
+                    "stage": s.get("stage"),
+                    "gates": s.get("gates"),
+                    "branch": s.get("branch"),
+                    "pr_url": s.get("pr_url"),
+                }
+                for repo, s in stories.items()
+            },
+        }
     )
+    previous_branches: list[str] = []
+    for r in restarts:
+        for s in r["stories"].values():
+            b = s.get("branch")
+            if b and b not in previous_branches:
+                previous_branches.append(b)
+    attempt = len(restarts) + 1
+
+    from cursor_sdk import Agent
+
+    # Create the new agent *before* touching state.json, so a failure here
+    # leaves the existing run exactly as it was.
+    agent = Agent.create(
+        api_key=api_key,
+        model=_pipeline_model(),
+        local=_local_agent_options(),
+    )
+
+    new_state: dict[str, Any] = {
+        "requirement": text,
+        "slug": slug,
+        "kind": kind,
+        "agent_id": agent.agent_id,
+        "notes": list(state.get("notes") or [])
+        + [
+            f"Restarted from scratch at {_now()} (attempt {attempt}): all gates "
+            "cleared, new agent. Repos were not cleaned up"
+            + (f"; earlier branches: {', '.join(previous_branches)}." if previous_branches else ".")
+        ],
+        "restarts": restarts,
+        "stories": {},
+    }
+    if repo_hints:
+        new_state["repo_hints"] = repo_hints
+    _write_state(slug, new_state)
+
+    with _runs_lock:
+        _runs[slug] = {"status": "starting", "error": None}
+
+    prompt = _headless_prompt(
+        text,
+        slug,
+        kind=kind,
+        repo_hints=repo_hints,
+        restart={"attempt": attempt, "previous_branches": previous_branches},
+    )
+    thread = threading.Thread(target=_run_turn, args=(slug, agent, prompt), daemon=True)
+    thread.start()
+
+    return {"slug": slug, "agent_id": agent.agent_id, "status": "starting", "attempt": attempt}
 
 
 def respond_to_requirement(slug: str, message: str) -> dict[str, Any]:

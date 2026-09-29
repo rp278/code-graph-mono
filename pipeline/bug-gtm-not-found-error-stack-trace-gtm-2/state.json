@@ -1,0 +1,12 @@
+{
+  "requirement": "Bug: gtm not found.\n\nError / stack trace:\ngtm not found.",
+  "slug": "bug-gtm-not-found-error-stack-trace-gtm-2",
+  "kind": "bug",
+  "agent_id": "agent-58fc86cd-9458-4de8-b055-af8908ea33e9",
+  "notes": [
+    "Started via dashboard (Cursor SDK, local runtime) at 2026-09-29T00:25:26.768042+00:00.",
+    "Rerun of 'bug-gtm-not-found-error-stack-trace-gtm'."
+  ],
+  "stories": {},
+  "rerun_of": "bug-gtm-not-found-error-stack-trace-gtm"
+}

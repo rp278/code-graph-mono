@@ -25,13 +25,14 @@ The design is written up in [`docs/HACKATHON_DESIGN.md`](docs/HACKATHON_DESIGN.m
 | [`codegraph/`](codegraph/README.md) | The API (`api/`, FastAPI) and the dashboard (`web/`, React + React Flow) |
 | [`graphify/`](graphify/README.md) | The graph builder: extracts nodes and edges from the code and loads them into Neo4j |
 | [`.cursor/`](.cursor) | Rules and skills that drive the Fix Bugs and Feature pipelines |
+| `code-repos/` | The work repos (git-ignored): clones, or symlinks to existing checkouts, created by `setup.sh` |
 | [`repos.manifest.json`](repos.manifest.json) | The work repos the agents read and change, and where to clone them from |
 | [`setup.sh`](setup.sh) | One-shot setup script |
 | [`docs/`](docs) | Design doc and slides |
 
 The work repos themselves (`tb-common-mfe`, `tb-discovery-mfe`, `tb-marketing-xapi`, `tb-discovery-xapi`,
-`tb-selection-xapi`, `kairos-fabric`, `ecom-content-stack`) are **not** part of this repo. `setup.sh` clones them next to it, or links
-existing checkouts, and they are git-ignored.
+`tb-selection-xapi`, `kairos-fabric`, `ecom-content-stack`) are **not** part of this repo. `setup.sh` puts them in
+`code-repos/`, either cloned or linked from existing checkouts, and that folder is git-ignored.
 
 ## Quick start
 

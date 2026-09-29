@@ -21,6 +21,8 @@ headless protocol, same PR-opening mechanics — different stages and
 different evidence. Do not re-derive shared mechanics; read them from the
 feature skill where referenced below.
 
+**Repo paths.** The work repos live in `code-repos/` at the workspace root. Everywhere below, `<repo>` means `code-repos/<repo>` (for example `<repo>/.pipeline/<slug>/` is `code-repos/<repo>/.pipeline/<slug>/`).
+
 **A bug run ends at an open PR. It never merges.** Do not run
 `gh pr merge`, `gh api ... /merge`, enable auto-merge, or push to the base
 branch — not at any stage, and not even if a later message asks you to.
@@ -95,9 +97,9 @@ Merging is a human action outside this pipeline. (The feature skill's
      simply be stale or not know about the code).
 
    Fallback (same goal, different tools — use `grep` / `glob` / `read`):
-   - Search **every repo checkout in the workspace** (the sibling top-level
-     git repos other than `codegraph`; `codegraph/api/repos.local.json`
-     lists them when present) for each signal: file paths and function /
+   - Search **every repo checkout in the workspace** (the folders in
+     `code-repos/`; `codegraph/api/repos.local.json` lists them when
+     present) for each signal: file paths and function /
      class names from the stack trace, route strings (`/api/products`),
      table names, and the error message text. Start with the repo hints,
      if any.

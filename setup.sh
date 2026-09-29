@@ -16,11 +16,13 @@ ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 # codegraph/ (api + web) and graphify/ are part of THIS repo (monorepo), so
 # there is nothing to clone for them.
 # Work repos the pipelines target are listed in repos.manifest.json. They are
-# NOT part of this repo. For each one, step 2 uses (in order): a folder already
-# in this directory; a checkout in TB_REPOS_DIR (symlinked); otherwise a fresh
-# clone from GitHub with `gh` (skip with --no-clone).
+# NOT part of this repo; they live in code-repos/ (git-ignored). For each one,
+# step 2 uses (in order): a folder already in code-repos/; a checkout in
+# TB_REPOS_DIR (symlinked); otherwise a fresh clone from GitHub with `gh`
+# (skip with --no-clone).
 MANIFEST="${REPOS_MANIFEST:-$ROOT/repos.manifest.json}"
 TB_REPOS_DIR="${TB_REPOS_DIR:-$HOME/Desktop/code}"
+CODE_REPOS="$ROOT/code-repos"
 CHECK_ONLY=0
 WITH_GRAPH=0
 NO_CLONE=0
@@ -78,29 +80,30 @@ fi
 [ "$CHECK_ONLY" -eq 1 ] && { printf '\nAll prerequisites OK.\n'; exit 0; }
 
 # --- work repos ------------------------------------------------------------
-step "2. Work repos (from $(basename "$MANIFEST"))"
+step "2. Work repos (from $(basename "$MANIFEST"), into code-repos/)"
 for r in codegraph graphify; do
   [ -d "$ROOT/$r" ] && ok "$r/ is part of this repo" || fail "$r/ is missing — is this a full checkout of the monorepo?"
 done
 [ -f "$MANIFEST" ] || { fail "$MANIFEST not found"; exit 1; }
+mkdir -p "$CODE_REPOS"
 
 GH_READY=0
 if command -v gh >/dev/null && gh auth status >/dev/null 2>&1; then GH_READY=1; fi
 
 MISSING=0
 while IFS=$'\t' read -r name github _lang; do
-  if [ -e "$ROOT/$name" ]; then
-    ok "$name already present"
+  if [ -e "$CODE_REPOS/$name" ] || [ -L "$CODE_REPOS/$name" ]; then
+    ok "$name already present in code-repos/"
   elif [ -d "$TB_REPOS_DIR/$name/.git" ]; then
-    ln -s "$TB_REPOS_DIR/$name" "$ROOT/$name" && ok "linked $name -> $TB_REPOS_DIR/$name"
+    ln -s "$TB_REPOS_DIR/$name" "$CODE_REPOS/$name" && ok "linked $name -> $TB_REPOS_DIR/$name"
   elif [ "$NO_CLONE" -eq 1 ]; then
-    warn "$name not found (skipped: --no-clone). Clone $github here, or set TB_REPOS_DIR"; MISSING=$((MISSING + 1))
+    warn "$name not found (skipped: --no-clone). Clone $github into code-repos/, or set TB_REPOS_DIR"; MISSING=$((MISSING + 1))
   elif [ "$GH_READY" -ne 1 ]; then
     warn "$name not found and gh is not logged in — run 'gh auth login', then re-run ./setup.sh"; MISSING=$((MISSING + 1))
   elif ! gh repo view "$github" >/dev/null 2>&1; then
     warn "$name: no access to github.com/$github — ask an org admin for access, then re-run ./setup.sh"; MISSING=$((MISSING + 1))
-  elif gh repo clone "$github" "$ROOT/$name" -- --quiet --filter=blob:none >/dev/null 2>&1; then
-    ok "cloned $github -> $name/"
+  elif gh repo clone "$github" "$CODE_REPOS/$name" -- --quiet --filter=blob:none >/dev/null 2>&1; then
+    ok "cloned $github -> code-repos/$name/"
   else
     warn "$name: clone of $github failed (network or auth?) — re-run ./setup.sh"; MISSING=$((MISSING + 1))
   fi
@@ -130,7 +133,7 @@ if [ ! -f "$API/repos.local.json" ]; then
 import json, sys
 root, out, manifest = sys.argv[1], sys.argv[2], sys.argv[3]
 repos = [
-    {"id": r["name"], "name": r["name"], "language": r.get("language", "typescript"), "path": f"{root}/{r['name']}"}
+    {"id": r["name"], "name": r["name"], "language": r.get("language", "typescript"), "path": f"{root}/code-repos/{r['name']}"}
     for r in json.load(open(manifest))
 ]
 open(out, "w").write(json.dumps(repos, indent=2) + "\n")

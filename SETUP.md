@@ -11,7 +11,7 @@ Neo4j (for the graph view) is optional and runs in Docker.
 | Dashboard (React) | your machine, from `codegraph/web` |
 | Neo4j (optional, for **View Graph**) | one Docker container |
 | Graph builder `graphify` (optional) | your machine, from `graphify/` |
-| Work repos the agents read and change | cloned next to this repo (or linked from an existing checkout) |
+| Work repos the agents read and change | `code-repos/` in this repo (cloned, or linked from an existing checkout; git-ignored) |
 
 ## Setup, step by step
 
@@ -45,7 +45,7 @@ cd code-graph-mono
 It is safe to re-run and never overwrites your settings. It will:
 
 1. **Get the work repos** listed in `repos.manifest.json`, for each one in this order:
-   a folder already in this directory; a checkout in `TB_REPOS_DIR` (default
+   a folder already in `code-repos/`; a checkout in `TB_REPOS_DIR` (default
    `~/Desktop/code`), which it symlinks; otherwise a fresh clone from GitHub with `gh`.
    Use `./setup.sh --no-clone` to skip cloning, or `./setup.sh --repos-only` to stop after this step.
 2. Create the API's Python environment and install its dependencies.
@@ -102,7 +102,7 @@ cd codegraph/web && npm run dev
 cursor .
 ```
 
-The cloned or linked work repos sit in this folder, so you see them next to `codegraph/` and `graphify/`.
+The work repos are in `code-repos/`, so you see them in the sidebar next to `codegraph/` and `graphify/`.
 
 ### Smoke test
 

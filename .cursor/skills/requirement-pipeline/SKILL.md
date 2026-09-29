@@ -18,6 +18,8 @@ Full design rationale: [`codegraph/pipeline/DESIGN.md`](../../../codegraph/pipel
 This file is the step-by-step operating procedure; read the design doc if
 you need the *why* behind any of this.
 
+**Repo paths.** The work repos live in `code-repos/` at the workspace root. Everywhere below, `<repo>` means `code-repos/<repo>` (for example `<repo>/.pipeline/<slug>/` is `code-repos/<repo>/.pipeline/<slug>/`).
+
 ## Before anything else
 
 1. Read `.cursor/rules/pipeline-gates.mdc` now. Its rule is absolute:
@@ -88,7 +90,7 @@ you need the *why* behind any of this.
    (graph database down, API unreachable, bad token), or returns **no
    matching nodes**, do NOT stop, ask, or fail the run. Instead use
    `grep` / `glob` / `read` over the repo checkouts in the workspace (the
-   sibling top-level git repos other than `codegraph`; 
+   folders in `code-repos/`;
    `codegraph/api/repos.local.json` lists them when present) to find what
    already exists for each keyword — routes, components, functions, and who
    calls them (follow one hop through wrappers, and search the *other*

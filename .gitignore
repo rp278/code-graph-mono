@@ -8,15 +8,9 @@
 *.key
 
 # codegraph/ and graphify/ are part of this monorepo (tracked).
-# The work repos below are the codebases being analysed. They live in their own
-# git repos elsewhere (symlinked here by setup.sh) — never track them here.
-/tb-common-mfe
-/tb-discovery-mfe
-/tb-marketing-xapi
-/tb-discovery-xapi
-/tb-selection-xapi
-/kairos-fabric
-/ecom-content-stack
+# The work repos being analysed live in code-repos/ (created by setup.sh) as
+# clones or symlinks to their own git repos elsewhere — never track them here.
+/code-repos/
 
 # Office/Keynote lock files created while a document is open
 ~$*

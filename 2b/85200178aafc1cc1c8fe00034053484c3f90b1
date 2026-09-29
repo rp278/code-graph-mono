@@ -1,0 +1,19 @@
+codegraph/pipeline/bug-error-stack-trace-serviceerrors-code/state.json
+  s_e1dad48fb1faa0::t_0086cc01dc3389 8-9,13,15,23-25
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.4",
+  "base_commit_sha": "2b85200178aafc1cc1c8fe00034053484c3f90b1",
+  "prompts": {},
+  "sessions": {
+    "s_e1dad48fb1faa0": {
+      "agent_id": {
+        "tool": "cursor",
+        "id": "agent-cfe436ac-ebe6-4470-9106-6c063516bd1c",
+        "model": "unknown"
+      },
+      "human_author": "Ramesh Polishetti <rp278@tmw.com>"
+    }
+  }
+}

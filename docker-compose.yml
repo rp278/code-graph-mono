@@ -48,7 +48,10 @@ services:
       - graphify_cache:/cache
       - ./graphify:/app:ro
       - ./codegraph/api/repos.local.json:/config/repos.json:ro
-      - ${TB_REPOS_DIR:-${HOME}/Desktop/code}:/repos:ro
+      # Repos cloned into this folder are found via /workspace; repos that are
+      # symlinks to another folder (TB_REPOS_DIR, e.g. ~/Desktop/code) via /repos.
+      - .:/workspace:ro
+      - ${TB_REPOS_DIR:-.}:/repos:ro
 
 volumes:
   neo4j_data:

@@ -1,0 +1,22 @@
+.github/workflows/rebuild-codegraph.yml
+  s_ecd3df3fe4768d::t_8ceb1282553f73 16
+  s_ecd3df3fe4768d::t_e754b740370fba 3
+.cursor/rules/codegraph.md
+  s_ecd3df3fe4768d::t_3a75ece487a8e1 5
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.4",
+  "base_commit_sha": "d5f8c4b1b2f129d339f2aa868b4031e40d03357a",
+  "prompts": {},
+  "sessions": {
+    "s_ecd3df3fe4768d": {
+      "agent_id": {
+        "tool": "cursor",
+        "id": "1d10e64f-8c4b-4af1-8786-2663295cab40",
+        "model": "claude-sonnet-5-5"
+      },
+      "human_author": "Ramesh Polishetti <rp278@tmw.com>"
+    }
+  }
+}

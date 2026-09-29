@@ -32,13 +32,21 @@ export const api = {
     request(!repoId || repoId === 'all' ? '/api/graph' : `/api/graph?repo_id=${encodeURIComponent(repoId)}`),
   getStats: () => request('/api/graph/stats'),
   rebuild: (repoId) => request('/api/graph/rebuild', { method: 'POST', body: { repo_id: repoId } }),
-  chat: (question, repoId) =>
-    request('/api/chat', { method: 'POST', body: { question, repo_id: repoId } }),
+  // Ask AI (Cursor agent). ask() returns immediately with a conversation id;
+  // poll getAsk() until status is 'done' or 'error'.
+  ask: (question, repoId, conversationId) =>
+    request('/api/ask', {
+      method: 'POST',
+      body: { question, repo_id: repoId, conversation_id: conversationId },
+    }),
+  getAsk: (conversationId) => request(`/api/ask/${encodeURIComponent(conversationId)}`),
   query: (cypher, params = {}) => request('/api/query', { method: 'POST', body: { cypher, params } }),
   listRequirements: () => request('/api/requirements'),
   getRequirement: (slug) => request(`/api/requirements/${encodeURIComponent(slug)}`),
-  startRequirement: (requirement) =>
-    request('/api/requirements', { method: 'POST', body: { requirement } }),
+  startRequirement: (requirement, kind = 'feature', repos = []) =>
+    request('/api/requirements', { method: 'POST', body: { requirement, kind, repos } }),
+  rerunRequirement: (slug) =>
+    request(`/api/requirements/${encodeURIComponent(slug)}/rerun`, { method: 'POST' }),
   respondToRequirement: (slug, message) =>
     request(`/api/requirements/${encodeURIComponent(slug)}/respond`, {
       method: 'POST',

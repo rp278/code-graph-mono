@@ -1,6 +1,6 @@
 # codegraph-web
 
-React dashboard for **codeGraph** — the AI agent that maps your codebase into a
+React dashboard for **CodeGraph** — the AI agent that maps your codebase into a
 knowledge graph stored in Neo4j.
 
 ## What it does
@@ -9,9 +9,9 @@ knowledge graph stored in Neo4j.
   (`@xyflow/react` canvas with dagre auto-layout): repo selector, node-type
   legend, label search with dim/highlight, click-to-inspect node details with
   neighbor connections, minimap, pan/zoom.
-- **Ask AI tab** — chat against the graph. When no LLM key is configured on the
-  backend, answers fall back to retrieved graph context shown as clickable
-  chips that jump back to the graph and highlight the node.
+- **Ask AI** — codebase Q&A answered by a read-only Cursor agent (needs
+  `CURSOR_API_KEY` on the backend). The graph context it used is shown as
+  clickable chips that jump back to the graph and highlight the node.
 - **Rebuild** — re-scan the selected repo and rebuild its graph from the header.
 
 ## Prerequisites

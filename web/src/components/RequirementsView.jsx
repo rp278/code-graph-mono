@@ -1,14 +1,27 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { api } from '../api';
 
-const GATE_LABELS = {
+// Feature and bug runs share one state machine but use different gate
+// keys/names (see .cursor/rules/pipeline-gates.mdc and pipeline-bugfix.mdc).
+const FEATURE_GATE_LABELS = {
   '1_stories': 'Stories',
   '2_plan': 'Plan',
   '3_impl': 'Implementation',
   '4_traceability': 'Traceability',
   '5_qa': 'QA checklist',
 };
-const GATE_ORDER = Object.keys(GATE_LABELS);
+const BUG_GATE_LABELS = {
+  '1_analysis': 'Analysis',
+  '2_rootcause': 'Root cause',
+  '3_repro': 'Reproduce',
+  '4_fix': 'Fix',
+  '5_qa': 'QA checklist',
+};
+
+function gatesFor(kind) {
+  const labels = kind === 'bug' ? BUG_GATE_LABELS : FEATURE_GATE_LABELS;
+  return { labels, order: Object.keys(labels) };
+}
 
 const STATUS_META = {
   idle: { label: 'Idle', cls: 'muted' },
@@ -24,10 +37,11 @@ function StatusPill({ status }) {
   return <span className={`run-status-pill ${meta.cls}`}>{meta.label}</span>;
 }
 
-function GateTrack({ gates }) {
+function GateTrack({ gates, kind }) {
+  const { labels, order } = gatesFor(kind);
   return (
     <div className="gate-track">
-      {GATE_ORDER.map((g) => {
+      {order.map((g) => {
         const v = gates?.[g];
         const cls =
           v === 'approved'
@@ -36,7 +50,7 @@ function GateTrack({ gates }) {
             ? 'gate-dot pending'
             : 'gate-dot';
         return (
-          <span key={g} className={cls} title={`${GATE_LABELS[g]}: ${v || 'not reached'}`} />
+          <span key={g} className={cls} title={`${labels[g]}: ${v || 'not reached'}`} />
         );
       })}
     </div>
@@ -54,26 +68,24 @@ function GateTrack({ gates }) {
 //               (first not-done, not-waiting step, only while the run's
 //               overall status is starting/running)
 //   upcoming  — hasn't been reached yet
-const STAGE_STEPS = [...GATE_ORDER, 'merge'];
-const STAGE_STEP_LABELS = { ...GATE_LABELS, merge: 'Merged' };
-
-function storyHasEarlierApprovals(story) {
-  const pending = story?.pending_gate?.gate;
-  if (!pending) return false;
-  const idx = GATE_ORDER.indexOf(pending);
-  if (idx <= 0) return false;
-  return GATE_ORDER.slice(0, idx).some((g) => story?.gates?.[g] === 'approved');
-}
-
-function computeStageSteps(story, runStatus, { isWorking = false, justApprovedGate = null } = {}) {
+// `awaiting` = this story has a gate that is waiting on the user: either
+// open for approval right now, or already answered but queued behind the
+// agent's current turn. It is per story, not per run, so a story can show
+// "waiting" while the agent is busy on a different repo.
+function computeStageSteps(
+  story,
+  runStatus,
+  { isWorking = false, justApprovedGate = null, kind = 'feature', awaiting = false } = {}
+) {
   const gates = story?.gates || {};
-  const steps = GATE_ORDER.map((g) => {
+  const { labels, order } = gatesFor(kind);
+  const steps = order.map((g) => {
     const v = gates[g];
     let status = 'upcoming';
     if (v === 'approved') status = 'done';
     else if (v === 'pending_reapproval' && runStatus === 'waiting_approval') status = 'waiting';
-    else if (story?.pending_gate?.gate === g && runStatus === 'waiting_approval') status = 'waiting';
-    return { key: g, label: GATE_LABELS[g], status };
+    else if (story?.pending_gate?.gate === g && awaiting) status = 'waiting';
+    return { key: g, label: labels[g], status };
   });
 
   const merged = story?.merge_status === 'merged';
@@ -112,8 +124,13 @@ function computeStageSteps(story, runStatus, { isWorking = false, justApprovedGa
   return steps;
 }
 
-function StageBar({ story, runStatus, isWorking, justApprovedGate }) {
-  const steps = computeStageSteps(story, runStatus, { isWorking, justApprovedGate });
+function StageBar({ story, runStatus, isWorking, justApprovedGate, kind, awaiting }) {
+  const steps = computeStageSteps(story, runStatus, {
+    isWorking,
+    justApprovedGate,
+    kind,
+    awaiting,
+  });
   return (
     <div className="stage-bar">
       {steps.map((step, i) => (
@@ -132,11 +149,15 @@ function StageBar({ story, runStatus, isWorking, justApprovedGate }) {
   );
 }
 
-function RequirementList({ items, selectedSlug, onSelect, loading, error, onRetry }) {
+function RequirementList({ items, selectedSlug, onSelect, loading, error, onRetry, kind }) {
+  const empty =
+    kind === 'bug'
+      ? 'No bug runs yet — file one below.'
+      : 'No features yet — start one below.';
   return (
     <div className="req-list">
       <div className="req-list-header">
-        <span>Requirements</span>
+        <span>{kind === 'bug' ? 'Bugs' : 'Features'}</span>
         {loading && <span className="spinner" />}
       </div>
       {error && (
@@ -148,7 +169,7 @@ function RequirementList({ items, selectedSlug, onSelect, loading, error, onRetr
         </div>
       )}
       {!loading && !error && items.length === 0 && (
-        <div className="req-list-empty muted">No requirements yet — start one below.</div>
+        <div className="req-list-empty muted">{empty}</div>
       )}
       {items.map((r) => (
         <button
@@ -160,12 +181,14 @@ function RequirementList({ items, selectedSlug, onSelect, loading, error, onRetr
             <span className="req-slug mono">{r.slug}</span>
             <StatusPill status={r.run_status} />
           </div>
-          <div className="req-list-item-text muted">{r.requirement}</div>
+          <div className="req-list-item-text muted">
+            {r.kind === 'bug' ? firstLine(r.requirement).replace(/^Bug:\s*/, '') : r.requirement}
+          </div>
           <div className="req-list-item-stories">
             {Object.entries(r.stories || {}).map(([repo, s]) => (
               <span key={repo} className="req-story-chip">
                 {repo}
-                <GateTrack gates={s.gates} />
+                <GateTrack gates={s.gates} kind={r.kind} />
               </span>
             ))}
           </div>
@@ -181,7 +204,17 @@ function RequirementList({ items, selectedSlug, onSelect, loading, error, onRetr
   );
 }
 
-function StoryCard({ repo, story, runStatus, isWorking, justApprovedGate }) {
+function StoryCard({
+  repo,
+  story,
+  runStatus,
+  isWorking,
+  justApprovedGate,
+  kind,
+  pendingOpen,
+  responseQueued,
+}) {
+  const { labels } = gatesFor(kind);
   return (
     <div className="story-card">
       <div className="story-card-header">
@@ -193,6 +226,8 @@ function StoryCard({ repo, story, runStatus, isWorking, justApprovedGate }) {
         runStatus={runStatus}
         isWorking={isWorking}
         justApprovedGate={justApprovedGate}
+        kind={kind}
+        awaiting={pendingOpen || responseQueued}
       />
       {story.pr_url && (
         <a className="story-pr-link" href={story.pr_url} target="_blank" rel="noreferrer">
@@ -200,10 +235,16 @@ function StoryCard({ repo, story, runStatus, isWorking, justApprovedGate }) {
         </a>
       )}
       {story.merge_status === 'merged' && <span className="merged-badge">Merged</span>}
-      {story.pending_gate && !isWorking && runStatus === 'waiting_approval' && (
+      {responseQueued && (
+        <div className="queued-note muted">
+          Your response is queued — the agent will pick it up as soon as it finishes its
+          current step.
+        </div>
+      )}
+      {pendingOpen && !isWorking && (
         <div className="pending-gate-box">
           <div className="pending-gate-title">
-            Waiting: Gate {story.pending_gate.gate} — {GATE_LABELS[story.pending_gate.gate] || story.pending_gate.gate}
+            Waiting: Gate {story.pending_gate.gate} — {labels[story.pending_gate.gate] || story.pending_gate.gate}
           </div>
           {story.pending_gate.summary && (
             <div className="pending-gate-summary muted">{story.pending_gate.summary}</div>
@@ -214,7 +255,7 @@ function StoryCard({ repo, story, runStatus, isWorking, justApprovedGate }) {
   );
 }
 
-function RequirementDetail({ slug, onRespond, responding }) {
+function RequirementDetail({ slug, onRespond, responding, onRerun }) {
   const [detail, setDetail] = useState(null);
   const [error, setError] = useState(null);
   const [revisionDrafts, setRevisionDrafts] = useState({});
@@ -311,26 +352,48 @@ function RequirementDetail({ slug, onRespond, responding }) {
   }
 
   const stories = Object.entries(detail.state.stories || {});
-  const pendingEntries = stories.filter(([, s]) => s.pending_gate);
+  const runKind = detail.state.kind || 'feature';
+  const gateLabels = gatesFor(runKind).labels;
   const dismissed = dismissedGateRef.current;
   const dismissedRepo = dismissed?.type === 'gate' ? dismissed.repo : null;
-  const visiblePending = pendingEntries.filter(([repo, s]) => {
-    if (!dismissedPending || !dismissed) return true;
-    if (dismissed.type === 'update') return false;
-    return !(
-      dismissed.repo === repo &&
-      dismissed.gate === s.pending_gate.gate &&
-      dismissed.presentedAt === s.pending_gate.presented_at
+  const agentBusy = detail.run_status === 'running' || detail.run_status === 'starting';
+  const acted = detail.acted || [];
+  const queuedMessages = (detail.queued || []).map((q) => q.message);
+
+  // A gate is "open" (waiting on the user) when it's on disk and nobody has
+  // answered that exact presentation of it yet. The server remembers
+  // answers (`acted`) until the agent processes them, so this survives page
+  // reloads and the agent still being mid-turn on some *other* story.
+  const actedFor = (repo, pg) =>
+    pg &&
+    acted.find(
+      (a) => a.repo === repo && a.gate === pg.gate && a.presented_at === pg.presented_at
     );
-  });
-  // Only show the Approve/Revise form when the agent has actually
-  // paused and this gate is ready — including the first Stories gate.
-  // During the initial analysis turn (and any later in-flight turn)
-  // `pending_gate` can already exist on disk for another story, or
-  // not exist yet at all; showing the panel then looks like a request
-  // for approval before the story is ready.
-  const showPendingPanel =
-    detail.run_status === 'waiting_approval' && !isBusy && visiblePending.length > 0;
+  const dismissedLocally = (repo, pg) =>
+    dismissedPending &&
+    dismissed?.type === 'gate' &&
+    dismissed.repo === repo &&
+    pg &&
+    dismissed.gate === pg.gate &&
+    dismissed.presentedAt === pg.presented_at;
+  const updateDismissed = dismissedPending && dismissed?.type === 'update';
+  const isOpenGate = (repo, s) =>
+    !!s.pending_gate &&
+    !updateDismissed &&
+    !actedFor(repo, s.pending_gate) &&
+    !dismissedLocally(repo, s.pending_gate);
+  // The user's answer is sitting in the queue behind the agent's current turn.
+  const isResponseQueued = (repo, s) => {
+    const a = actedFor(repo, s.pending_gate);
+    return (
+      !!a && queuedMessages.some((m) => m.startsWith(`gate ${a.gate} for ${repo}:`))
+    );
+  };
+
+  // Gates waiting on the user are shown even while the agent is busy with
+  // another story: answering one just queues the response.
+  const visiblePending = stories.filter(([repo, s]) => isOpenGate(repo, s));
+  const showPendingPanel = visiblePending.length > 0;
 
   const approve = async (repo, gate) => {
     const presentedAt = stories.find(([r]) => r === repo)?.[1]?.pending_gate?.presented_at;
@@ -374,6 +437,22 @@ function RequirementDetail({ slug, onRespond, responding }) {
       <div className="req-detail-header">
         <h2 className="mono">{detail.slug}</h2>
         <StatusPill status={detail.run_status} />
+        {detail.state.rerun_of && (
+          <span className="muted rerun-of">rerun of {detail.state.rerun_of}</span>
+        )}
+        <button
+          type="button"
+          className="tab-chip rerun-btn"
+          onClick={() => onRerun(slug)}
+          disabled={isBusy}
+          title={
+            isBusy
+              ? 'Wait for the current step to finish'
+              : 'Start a new run from this same report (this run is kept as-is)'
+          }
+        >
+          ↻ Rerun
+        </button>
       </div>
       {(detail.run_status === 'running' || detail.run_status === 'starting') && (
         <div className="live-status-ticker">
@@ -381,7 +460,23 @@ function RequirementDetail({ slug, onRespond, responding }) {
           {detail.live_status?.text || 'Working…'}
         </div>
       )}
-      <p className="req-detail-text">{detail.state.requirement}</p>
+      {runKind === 'bug' ? (
+        <div className="bug-report">
+          <div className="bug-report-title">
+            {firstLine(detail.state.requirement).replace(/^Bug:\s*/, '')}
+          </div>
+          {detail.state.repo_hints?.length > 0 && (
+            <div className="bug-report-hints muted">
+              Repo hint: {detail.state.repo_hints.join(', ')}
+            </div>
+          )}
+          <pre className="bug-report-body mono">
+            {detail.state.requirement.split('\n').slice(1).join('\n').trim()}
+          </pre>
+        </div>
+      ) : (
+        <p className="req-detail-text">{detail.state.requirement}</p>
+      )}
 
       {detail.error && <div className="banner error">{detail.error}</div>}
 
@@ -392,16 +487,21 @@ function RequirementDetail({ slug, onRespond, responding }) {
             repo={repo}
             story={story}
             runStatus={detail.run_status}
+            pendingOpen={isOpenGate(repo, story)}
+            responseQueued={isResponseQueued(repo, story)}
             isWorking={
               (dismissedPending && dismissedRepo === repo) ||
               (isBusy &&
-                !dismissedPending &&
                 story.stage !== 'done' &&
-                (!story.pending_gate || storyHasEarlierApprovals(story)))
+                !isOpenGate(repo, story) &&
+                !isResponseQueued(repo, story))
             }
+            kind={runKind}
             justApprovedGate={
               dismissedPending && dismissed?.type === 'gate' && dismissed.repo === repo
                 ? dismissed.gate
+                : actedFor(repo, story.pending_gate)?.decision === 'approved'
+                ? story.pending_gate.gate
                 : null
             }
           />
@@ -411,13 +511,19 @@ function RequirementDetail({ slug, onRespond, responding }) {
       {showPendingPanel && (
         <div className="gate-actions">
           <h3>Pending approval</h3>
+          {agentBusy && (
+            <p className="muted gate-queue-hint">
+              The agent is busy on another step. You can answer now — your response is queued
+              and sent automatically, in order, as soon as it's free.
+            </p>
+          )}
           {visiblePending.map(([repo, s]) => {
             const gate = s.pending_gate.gate;
             const key = `${repo}:${gate}`;
             return (
               <div key={key} className="gate-action-row">
                 <div>
-                  <strong>{repo}</strong> — {GATE_LABELS[gate] || gate}
+                  <strong>{repo}</strong> — {gateLabels[gate] || gate}
                   {s.pending_gate.summary && (
                     <div className="muted pending-gate-summary">{s.pending_gate.summary}</div>
                   )}
@@ -430,19 +536,19 @@ function RequirementDetail({ slug, onRespond, responding }) {
                   onChange={(e) =>
                     setRevisionDrafts((d) => ({ ...d, [key]: e.target.value }))
                   }
-                  disabled={isBusy}
+                  disabled={responding}
                 />
                 <div className="gate-action-buttons">
                   <button
                     className="rebuild-btn"
-                    disabled={isBusy}
+                    disabled={responding}
                     onClick={() => approve(repo, gate)}
                   >
-                    {isBusy ? '…' : 'Approve'}
+                    {responding ? '…' : agentBusy ? 'Approve (queue)' : 'Approve'}
                   </button>
                   <button
                     className="link-btn"
-                    disabled={isBusy}
+                    disabled={responding}
                     onClick={() => revise(repo, gate)}
                   >
                     Send back for revision
@@ -497,16 +603,45 @@ function RequirementDetail({ slug, onRespond, responding }) {
   );
 }
 
-export default function RequirementsView() {
+// Turn the bug intake fields into the single text blob the pipeline gets.
+// The first line ("Bug: <title>") also seeds the run's slug, so when no
+// title is given we derive one from the first line of the pasted error.
+function buildBugReport({ title, error, details }) {
+  const firstErrorLine =
+    error
+      .split('\n')
+      .map((l) => l.trim())
+      .find(Boolean) || 'Untitled bug';
+  const heading = title.trim() || firstErrorLine.slice(0, 80);
+  return [
+    `Bug: ${heading}`,
+    '',
+    'Error / stack trace:',
+    error.trim(),
+    details.trim() ? `\nExtra details:\n${details.trim()}` : null,
+  ]
+    .filter((p) => p !== null)
+    .join('\n');
+}
+
+const firstLine = (text) => (text || '').split('\n').find((l) => l.trim()) || '';
+
+export default function RequirementsView({ kind = 'feature', repos = [] }) {
   const [items, setItems] = useState([]);
   const [loading, setLoading] = useState(true);
   const [listError, setListError] = useState(null);
   const [selectedSlug, setSelectedSlug] = useState(null);
   const [newRequirement, setNewRequirement] = useState('');
+  const [bugError, setBugError] = useState('');
+  const [bugTitle, setBugTitle] = useState('');
+  const [bugDetails, setBugDetails] = useState('');
+  const [bugRepos, setBugRepos] = useState([]);
   const [starting, setStarting] = useState(false);
   const [startError, setStartError] = useState(null);
   const [responding, setResponding] = useState(false);
   const pollRef = useRef(null);
+
+  const visibleItems = items.filter((r) => (r.kind || 'feature') === kind);
 
   const loadList = useCallback(async () => {
     try {
@@ -527,20 +662,59 @@ export default function RequirementsView() {
   // Light polling of the list while anything is active, to keep status
   // pills fresh even if the user is looking at a different requirement.
   useEffect(() => {
-    const anyActive = items.some((r) => r.run_status === 'running' || r.run_status === 'starting');
+    const anyActive = visibleItems.some((r) => r.run_status === 'running' || r.run_status === 'starting');
     if (!anyActive) return undefined;
     pollRef.current = setInterval(loadList, 2000);
     return () => clearInterval(pollRef.current);
-  }, [items, loadList]);
+  }, [items, kind, loadList]);
+
+  useEffect(() => {
+    setSelectedSlug(null);
+  }, [kind]);
 
   const startNew = async () => {
-    const text = newRequirement.trim();
-    if (!text || starting) return;
+    let text = newRequirement.trim();
+    if (kind === 'bug') {
+      if (!bugError.trim() || starting) return;
+      text = buildBugReport({ title: bugTitle, error: bugError, details: bugDetails });
+    } else if (!text || starting) {
+      return;
+    }
     setStarting(true);
     setStartError(null);
     try {
-      const r = await api.startRequirement(text);
+      const r = await api.startRequirement(text, kind, kind === 'bug' ? bugRepos : []);
       setNewRequirement('');
+      setBugError('');
+      setBugTitle('');
+      setBugDetails('');
+      setBugRepos([]);
+      await loadList();
+      setSelectedSlug(r.slug);
+    } catch (e) {
+      setStartError(e.message);
+    } finally {
+      setStarting(false);
+    }
+  };
+
+  // Start a fresh run from an existing one's original report. The old run
+  // stays as it was; the new one is selected so its progress is visible.
+  const rerun = async (slug) => {
+    if (starting) return;
+    const what = kind === 'bug' ? 'bug' : 'requirement';
+    if (
+      !window.confirm(
+        `Rerun this ${what}?\n\nThis starts a NEW pipeline run from the same report, ` +
+          'with its own branches and approval gates. The current run is left untouched.'
+      )
+    ) {
+      return;
+    }
+    setStarting(true);
+    setStartError(null);
+    try {
+      const r = await api.rerunRequirement(slug);
       await loadList();
       setSelectedSlug(r.slug);
     } catch (e) {
@@ -569,40 +743,115 @@ export default function RequirementsView() {
     <div className="requirements-tab">
       <div className="req-sidebar">
         <RequirementList
-          items={items}
+          items={visibleItems}
           selectedSlug={selectedSlug}
           onSelect={setSelectedSlug}
           loading={loading}
           error={listError}
           onRetry={loadList}
+          kind={kind}
         />
         <div className="new-req-box">
-          <h3>New requirement</h3>
-          <textarea
-            className="revise-input"
-            placeholder="Describe the feature in plain English…"
-            rows={3}
-            value={newRequirement}
-            onChange={(e) => setNewRequirement(e.target.value)}
-            disabled={starting}
-          />
+          <h3>{kind === 'bug' ? 'New bug' : 'New feature'}</h3>
+          {kind === 'bug' ? (
+            <>
+              <textarea
+                className="revise-input mono bug-error-input"
+                placeholder="Paste the error message or stack trace…"
+                aria-label="Error message or stack trace"
+                rows={6}
+                value={bugError}
+                onChange={(e) => setBugError(e.target.value)}
+                disabled={starting}
+                spellCheck={false}
+              />
+              <input
+                className="search-input"
+                placeholder="Title (optional — derived from the error)"
+                aria-label="Bug title"
+                value={bugTitle}
+                onChange={(e) => setBugTitle(e.target.value)}
+                disabled={starting}
+              />
+              <div className="repo-pick" role="group" aria-label="Suspected repos">
+                <span className="repo-pick-label muted">Repos</span>
+                <button
+                  type="button"
+                  className={`repo-chip ${bugRepos.length === 0 ? 'active' : ''}`}
+                  onClick={() => setBugRepos([])}
+                  disabled={starting}
+                  title="Let CodeGraph find the repo from the error"
+                >
+                  Not sure
+                </button>
+                {repos.map((r) => {
+                  const on = bugRepos.includes(r.id);
+                  return (
+                    <button
+                      key={r.id}
+                      type="button"
+                      className={`repo-chip ${on ? 'active' : ''}`}
+                      onClick={() =>
+                        setBugRepos((cur) =>
+                          cur.includes(r.id) ? cur.filter((x) => x !== r.id) : [...cur, r.id]
+                        )
+                      }
+                      disabled={starting}
+                    >
+                      {r.name || r.id}
+                    </button>
+                  );
+                })}
+              </div>
+              <textarea
+                className="revise-input"
+                placeholder="Extra details (optional) — when it happens, what changed recently…"
+                aria-label="Extra details"
+                rows={2}
+                value={bugDetails}
+                onChange={(e) => setBugDetails(e.target.value)}
+                disabled={starting}
+              />
+            </>
+          ) : (
+            <textarea
+              className="revise-input"
+              placeholder="Describe the feature in plain English…"
+              rows={3}
+              value={newRequirement}
+              onChange={(e) => setNewRequirement(e.target.value)}
+              disabled={starting}
+            />
+          )}
           {startError && <div className="banner error small">{startError}</div>}
           <button
             className="rebuild-btn"
             onClick={startNew}
-            disabled={starting || !newRequirement.trim()}
+            disabled={
+              starting ||
+              (kind === 'bug' ? !bugError.trim() : !newRequirement.trim())
+            }
           >
-            {starting ? 'Starting…' : 'Run through pipeline'}
+            {starting ? 'Starting…' : kind === 'bug' ? 'Start fix pipeline' : 'Run through pipeline'}
           </button>
         </div>
       </div>
       <div className="req-main">
         {selectedSlug ? (
-          <RequirementDetail slug={selectedSlug} onRespond={respond} responding={responding} />
+          <RequirementDetail
+            slug={selectedSlug}
+            onRespond={respond}
+            responding={responding}
+            onRerun={rerun}
+          />
         ) : (
           <div className="empty-state">
-            <h2>Select a requirement</h2>
-            <p className="muted">Pick one from the list, or start a new one.</p>
+            <h2>{kind === 'bug' ? 'Select a bug' : 'Select a feature'}</h2>
+            <p className="muted">
+              {kind === 'bug'
+                ? 'Pick one from the list, or file a new bug on the left.'
+                : 'Pick one from the list, or start a new one.'}
+            </p>
           </div>
         )}
       </div>

@@ -5,8 +5,11 @@ import { layoutNodes, toFlowNode, toFlowEdge } from './graphUtils';
 import Header from './components/Header';
 import Sidebar from './components/Sidebar';
 import GraphView from './components/GraphView';
-import ChatView from './components/ChatView';
+import AskView from './components/AskView';
 import RequirementsView from './components/RequirementsView';
+import Landing from './components/Landing';
+import { isFeatureDevelopmentEnabled } from './flags';
+import AppShell from './components/AppShell';
 
 export default function App() {
   const [repos, setRepos] = useState([]);
@@ -17,6 +20,12 @@ export default function App() {
   const [stats, setStats] = useState({ nodes: 0, edges: 0 });
   const [statsLoading, setStatsLoading] = useState(true);
 
+  const [screen, setScreen] = useState(() => {
+    const saved = sessionStorage.getItem('codegraph.screen') || 'home';
+    // Don't restore a flag-gated screen when its flag is off.
+    if (saved === 'features' && !isFeatureDevelopmentEnabled()) return 'home';
+    return saved;
+  });
   const [tab, setTab] = useState('graph');
 
   const [apiNodes, setApiNodes] = useState([]);
@@ -33,8 +42,19 @@ export default function App() {
   const [search, setSearch] = useState('');
 
   const [rebuild, setRebuild] = useState({ state: 'idle', message: '' });
-
   const rfRef = useRef(null);
+
+  const goHome = useCallback(() => {
+    setScreen('home');
+    setTab('graph');
+    sessionStorage.setItem('codegraph.screen', 'home');
+  }, []);
+
+  const chooseScreen = useCallback((id) => {
+    setScreen(id);
+    setTab('graph');
+    sessionStorage.setItem('codegraph.screen', id);
+  }, []);
 
   // ---- data loading ----
   const loadRepos = useCallback(async () => {
@@ -169,6 +189,8 @@ export default function App() {
   // Jump from a chat context chip back to the graph tab, highlighting the node.
   const jumpToNode = useCallback(
     (id) => {
+      setScreen('graph');
+      sessionStorage.setItem('codegraph.screen', 'graph');
       setTab('graph');
       setSelectedId(id);
       setHighlightId(id);
@@ -193,39 +215,28 @@ export default function App() {
 
   const isEmpty = !graphLoading && !graphError && apiNodes.length === 0;
 
-  return (
-    <div className="app">
-      <Header
-        repos={repos}
-        selectedRepoId={selectedRepoId}
-        onSelectRepo={setSelectedRepoId}
-        stats={stats}
-        statsLoading={statsLoading}
-        rebuild={rebuild}
-        onRebuild={handleRebuild}
-      />
+  const graphActions = (
+    <Header
+      repos={repos}
+      selectedRepoId={selectedRepoId}
+      onSelectRepo={setSelectedRepoId}
+      stats={stats}
+      statsLoading={statsLoading}
+      rebuild={rebuild}
+      onRebuild={handleRebuild}
+      extra={
+        <button
+          className={tab === 'chat' ? 'tab-chip active' : 'tab-chip'}
+          onClick={() => setTab((t) => (t === 'chat' ? 'graph' : 'chat'))}
+        >
+          {tab === 'chat' ? 'Back to graph' : 'Ask AI'}
+        </button>
+      }
+    />
+  );
 
-      <nav className="tabs" aria-label="Views">
-        <button
-          className={tab === 'graph' ? 'tab active' : 'tab'}
-          onClick={() => setTab('graph')}
-        >
-          Graph
-        </button>
-        <button
-          className={tab === 'chat' ? 'tab active' : 'tab'}
-          onClick={() => setTab('chat')}
-        >
-          Ask AI
-        </button>
-        <button
-          className={tab === 'requirements' ? 'tab active' : 'tab'}
-          onClick={() => setTab('requirements')}
-        >
-          Requirements
-        </button>
-      </nav>
-
+  const graphBody = (
+    <>
       {reposError && (
         <div className="banner error" role="alert">
           {reposError}
@@ -235,8 +246,13 @@ export default function App() {
         </div>
       )}
       {reposLoading && <div className="banner info">Loading repositories…</div>}
-
-      {tab === 'graph' ? (
+      {tab === 'chat' ? (
+        <AskView
+          repos={repos}
+          initialRepoId={selectedRepoId || 'all'}
+          onJumpToNode={jumpToNode}
+        />
+      ) : (
         <div className="graph-tab">
           <Sidebar
             apiNodes={apiNodes}
@@ -277,15 +293,37 @@ export default function App() {
             )}
           </div>
         </div>
-      ) : tab === 'chat' ? (
-        <ChatView
-          repoId={selectedRepoId}
-          repos={repos}
-          onJumpToNode={jumpToNode}
-        />
-      ) : (
-        <RequirementsView />
       )}
+    </>
+  );
+
+  if (screen === 'home') {
+    return (
+      <div className="app app-landing">
+        <Landing onChoose={chooseScreen} />
+      </div>
+    );
+  }
+
+  const titles = {
+    graph: 'View Graph',
+    features: 'Feature Development',
+    bugs: 'Fix Bugs',
+    ask: 'Ask AI',
+  };
+
+  return (
+    <div className="app">
+      <AppShell
+        title={titles[screen] || 'CodeGraph'}
+        onHome={goHome}
+        actions={screen === 'graph' ? graphActions : null}
+      >
+        {screen === 'graph' && graphBody}
+        {screen === 'features' && <RequirementsView kind="feature" />}
+        {screen === 'bugs' && <RequirementsView kind="bug" repos={repos} />}
+        {screen === 'ask' && <AskView repos={repos} onJumpToNode={jumpToNode} />}
+      </AppShell>
     </div>
   );
 }

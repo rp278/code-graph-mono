@@ -170,6 +170,7 @@ def list_requirements() -> list[dict[str, Any]]:
                     }
                     for repo, s in state.get("stories", {}).items()
                 },
+                "kind": state.get("kind") or "feature",
                 "run_status": _derive_run_status(state, cached.get("status")),
                 "live_status": cached.get("live_status"),
             }
@@ -177,36 +178,141 @@ def list_requirements() -> list[dict[str, Any]]:
     return out
 
 
+_GATE_RESPONSE_RE = re.compile(
+    r"^\s*gate\s+(\S+)\s+for\s+(\S+?):\s*(approved|revise)\b", re.IGNORECASE
+)
+
+
+def _parse_gate_response(message: str, state: dict[str, Any]) -> Optional[dict[str, Any]]:
+    """If `message` answers a gate that is *currently pending* in state.json
+    (e.g. "gate 1_analysis for shop-api: approved"), describe which exact
+    presentation of the gate it answers. Anything else (requirement
+    changes, answers to stale gates) returns None and is simply forwarded."""
+    m = _GATE_RESPONSE_RE.match(message or "")
+    if not m:
+        return None
+    gate, repo, decision = m.group(1), m.group(2), m.group(3).lower()
+    pg = ((state.get("stories") or {}).get(repo) or {}).get("pending_gate") or {}
+    if pg.get("gate") != gate or not pg.get("presented_at"):
+        return None
+    return {"repo": repo, "gate": gate, "presented_at": pg["presented_at"], "decision": decision}
+
+
+def _same_gate(a: dict[str, Any], b: dict[str, Any]) -> bool:
+    return (a["repo"], a["gate"], a["presented_at"]) == (b["repo"], b["gate"], b["presented_at"])
+
+
+def _live_acted(entry: dict[str, Any], state: dict[str, Any]) -> list[dict[str, Any]]:
+    """Responses the user already gave whose gate is *still* the pending
+    one on disk -- i.e. the agent hasn't processed them yet, so the
+    dashboard must not offer that gate for approval again. Once the agent
+    clears or replaces the gate, the entry stops matching and drops out."""
+    out = []
+    for a in entry.get("acted") or []:
+        pg = ((state.get("stories") or {}).get(a["repo"]) or {}).get("pending_gate") or {}
+        if pg.get("gate") == a["gate"] and pg.get("presented_at") == a["presented_at"]:
+            out.append(a)
+    return out
+
+
 def get_requirement(slug: str) -> dict[str, Any]:
     state = _read_state(slug)
     with _runs_lock:
         cached = _runs.get(slug, {})
+        acted = _live_acted(cached, state)
+        if "acted" in cached:
+            cached["acted"] = acted
+        queued = [dict(q) for q in (cached.get("queued") or [])]
     return {
         "slug": slug,
         "state": state,
         "run_status": _derive_run_status(state, cached.get("status")),
         "error": cached.get("error"),
         "live_status": cached.get("live_status"),
+        # Gate responses given but not yet processed by the agent, and the
+        # raw messages still waiting for the agent to be free.
+        "acted": acted,
+        "queued": queued,
     }
 
 
-def _headless_prompt(requirement_text: str, slug: str) -> str:
-    return (
+def _clean_repo_hints(repos: Optional[list[str]]) -> list[str]:
+    """Normalize user-supplied repo hints: strip, drop blanks/dupes, cap."""
+    out: list[str] = []
+    for r in repos or []:
+        r = (r or "").strip()
+        if r and r not in out:
+            out.append(r)
+    return out[:10]
+
+
+def _headless_prompt(
+    requirement_text: str,
+    slug: str,
+    kind: str = "feature",
+    repo_hints: Optional[list[str]] = None,
+) -> str:
+    common = (
         "HEADLESS_MODE: true\n\n"
-        "Run the `requirement-pipeline` skill "
-        "(.cursor/skills/requirement-pipeline/SKILL.md) for the following "
-        f"free-text requirement. Use slug `{slug}` exactly — it has "
-        "already been reserved and a bootstrap state.json created for it "
-        f"at codegraph/pipeline/{slug}/state.json with an `agent_id` field "
-        "already set; preserve that field whenever you update the file, "
-        "do not overwrite or remove it.\n\n"
+    )
+    headless_rule = (
         "You are running headlessly via the Cursor SDK, not in an "
         "interactive chat — there is no one to answer AskQuestion. Follow "
         ".cursor/rules/pipeline-gates.mdc's \"Headless mode\" section for "
         "every gate instead: write a `pending_gate` marker into this "
         "story's entry in state.json and end your turn, rather than "
         "asking a question and waiting.\n\n"
-        f"Requirement:\n{requirement_text}"
+    )
+    state_rule = (
+        f"Use slug `{slug}` exactly — it has already been reserved and a "
+        f"bootstrap state.json created for it at "
+        f"codegraph/pipeline/{slug}/state.json with an `agent_id` field "
+        "already set; preserve that field whenever you update the file, "
+        "do not overwrite or remove it.\n\n"
+    )
+
+    if kind == "bug":
+        hints = _clean_repo_hints(repo_hints)
+        hint_line = (
+            f"Repo hints from the reporter (a starting point, NOT a "
+            f"constraint — follow the evidence if it points elsewhere): "
+            f"{', '.join(hints)}\n\n"
+            if hints
+            else             "The reporter gave no repo hints — locate the bug from the "
+            "signals in the error text.\n\n"
+        )
+        graph_rule = (
+            "The codeGraph is a helper, not a dependency: query it with a "
+            "short timeout, and if it errors, is unreachable, or finds no "
+            "matching node, do NOT stop or fail — locate the bug yourself "
+            "by searching the code in the workspace repos (see Stage 1 of "
+            "the skill) and say in bugfix.md which path you used.\n\n"
+        )
+        return (
+            common
+            + "Run the `bug-fix-pipeline` skill "
+            "(.cursor/skills/bug-fix-pipeline/SKILL.md) for the bug report "
+            "below. This is a bug-fix run, not a new-feature run: its "
+            "state.json has `\"kind\": \"bug\"` and its gates are "
+            "`1_analysis`, `2_rootcause`, `3_repro`, `4_fix`, `5_qa` "
+            "(see .cursor/rules/pipeline-bugfix.mdc). Prefer the smallest "
+            "change that restores expected behavior, and make no non-test "
+            "source changes before Gate 3.\n\n"
+            + state_rule
+            + headless_rule
+            + graph_rule
+            + hint_line
+            + f"Bug report:\n{requirement_text}"
+        )
+
+    return (
+        common
+        + "Run the `requirement-pipeline` skill "
+        "(.cursor/skills/requirement-pipeline/SKILL.md) for the following "
+        "free-text requirement. "
+        + state_rule
+        + headless_rule
+        + f"Requirement:\n{requirement_text}"
     )
 
 
@@ -266,7 +372,35 @@ def _set_live_status(slug: str, text: Optional[str]) -> None:
 
 
 def _run_turn(slug: str, agent: Any, message: str) -> None:
-    """Run one turn and update the in-memory status cache.
+    """Run a turn, then keep running any responses that were queued while
+    it was in flight (one turn per queued message, in order).
+
+    A run is one agent conversation, so turns are strictly serial. When
+    the user answers a gate for another repo mid-turn, the answer is
+    queued by `respond_to_requirement` and picked up here the moment the
+    current turn ends -- atomically with the status change, so a new
+    /respond can never sneak in between and start a second, concurrent
+    turn on the same agent.
+    """
+    next_message: Optional[str] = message
+    while next_message is not None:
+        next_message = _run_one_turn(slug, agent, next_message)
+
+
+def _drop_pending_responses(slug: str) -> None:
+    """Forget queued/acted responses (call with _runs_lock held). Used when
+    a run errors or finishes: queued messages would otherwise fire
+    against a state they were never meant for, and `acted` markers would
+    block the user from retrying."""
+    entry = _runs.get(slug)
+    if entry:
+        entry["queued"] = []
+        entry["acted"] = []
+
+
+def _run_one_turn(slug: str, agent: Any, message: str) -> Optional[str]:
+    """Run one turn and update the in-memory status cache. Returns the
+    next queued message to send, if any.
 
     Deliberately does *not* close the agent except when the whole run
     has reached a terminal "done" state. `agent.close()` sends a
@@ -278,6 +412,7 @@ def _run_turn(slug: str, agent: Any, message: str) -> None:
     click 404 with AgentNotFoundError.
     """
     done = False
+    next_message: Optional[str] = None
     try:
         with _runs_lock:
             _runs.setdefault(slug, {})
@@ -299,29 +434,47 @@ def _run_turn(slug: str, agent: Any, message: str) -> None:
         _set_live_status(slug, None)
         if getattr(result, "status", None) == "error":
             with _runs_lock:
+                dropped = len(_runs[slug].get("queued") or [])
                 _runs[slug]["status"] = "error"
-                _runs[slug]["error"] = f"agent run finished with status=error (run id {result.id})"
-            return
+                _runs[slug]["error"] = (
+                    f"agent run finished with status=error (run id {result.id})"
+                    + (f"; {dropped} queued response(s) were discarded — send them again" if dropped else "")
+                )
+                _drop_pending_responses(slug)
+            return None
         try:
             state = _read_state(slug)
             derived = _derive_run_status(state, None)
         except PipelineAgentError:
             derived = "error"
         with _runs_lock:
-            _runs[slug]["status"] = derived
+            queued = _runs[slug].get("queued") or []
+            if queued and derived not in ("done", "error"):
+                # Hand the next queued response to the same agent. Status is
+                # flipped in the same critical section, so the run is never
+                # observably idle in between.
+                next_message = queued.pop(0)["message"]
+                _runs[slug]["status"] = "starting"
+            else:
+                _runs[slug]["status"] = derived
+                if derived in ("done", "error"):
+                    _drop_pending_responses(slug)
         done = derived == "done"
     except Exception as e:  # noqa: BLE001
         _set_live_status(slug, None)
+        next_message = None
         with _runs_lock:
             _runs.setdefault(slug, {})
             _runs[slug]["status"] = "error"
             _runs[slug]["error"] = f"{e}\n{traceback.format_exc()[-2000:]}"
+            _drop_pending_responses(slug)
     finally:
         if done:
             try:
                 agent.close()
             except Exception:  # noqa: BLE001
                 pass
+    return next_message
 
 
 def _local_agent_options() -> Any:
@@ -347,7 +500,12 @@ def _local_agent_options() -> Any:
     )
 
 
-def start_requirement(requirement_text: str) -> dict[str, Any]:
+def start_requirement(
+    requirement_text: str,
+    kind: str = "feature",
+    repos: Optional[list[str]] = None,
+    rerun_of: Optional[str] = None,
+) -> dict[str, Any]:
     api_key = _cursor_api_key()
     if not api_key:
         raise PipelineAgentError(
@@ -368,28 +526,63 @@ def start_requirement(requirement_text: str) -> dict[str, Any]:
     )
     agent_id = agent.agent_id
 
+    kind = kind if kind in ("feature", "bug") else "feature"
+    repo_hints = _clean_repo_hints(repos) if kind == "bug" else []
+
     # Bootstrap state.json *before* kicking off the agent, so agent_id is
     # recoverable even if the very first turn crashes or this process
     # restarts mid-run.
-    _write_state(
-        slug,
-        {
-            "requirement": requirement_text,
-            "slug": slug,
-            "agent_id": agent_id,
-            "notes": [f"Started via dashboard (Cursor SDK, local runtime) at {_now()}."],
-            "stories": {},
-        },
-    )
+    state: dict[str, Any] = {
+        "requirement": requirement_text,
+        "slug": slug,
+        "kind": kind,
+        "agent_id": agent_id,
+        "notes": [f"Started via dashboard (Cursor SDK, local runtime) at {_now()}."],
+        "stories": {},
+    }
+    if repo_hints:
+        state["repo_hints"] = repo_hints
+    if rerun_of:
+        state["rerun_of"] = rerun_of
+        state["notes"].append(f"Rerun of '{rerun_of}'.")
+    _write_state(slug, state)
 
     with _runs_lock:
         _runs[slug] = {"status": "starting", "error": None}
 
-    prompt = _headless_prompt(requirement_text, slug)
+    prompt = _headless_prompt(requirement_text, slug, kind=kind, repo_hints=repo_hints)
     thread = threading.Thread(target=_run_turn, args=(slug, agent, prompt), daemon=True)
     thread.start()
 
     return {"slug": slug, "agent_id": agent_id, "status": "starting"}
+
+
+def rerun_requirement(slug: str) -> dict[str, Any]:
+    """Start a brand-new run from an existing run's original report.
+
+    The new run gets its own slug, agent, branches and gates -- the old
+    run and its history are left exactly as they were. Uses the stored
+    `requirement` text (for a bug, the full intake report), `kind` and
+    `repo_hints`. Refused while the source run is still mid-turn, since
+    both agents would work in the same repo checkouts at once.
+    """
+    state = _read_state(slug)  # raises "no such requirement run" if missing
+    with _runs_lock:
+        cached = _runs.get(slug, {}).get("status")
+    if cached in ("running", "starting"):
+        raise PipelineAgentError(
+            f"'{slug}' is still working -- wait for it to pause or finish "
+            "before rerunning it"
+        )
+    text = state.get("requirement") or ""
+    if not text.strip():
+        raise PipelineAgentError(f"'{slug}' has no stored requirement text to rerun")
+    return start_requirement(
+        text,
+        kind=state.get("kind") or "feature",
+        repos=state.get("repo_hints") or [],
+        rerun_of=slug,
+    )
 
 
 def respond_to_requirement(slug: str, message: str) -> dict[str, Any]:
@@ -406,24 +599,54 @@ def respond_to_requirement(slug: str, message: str) -> dict[str, Any]:
             "this way"
         )
 
-    with _runs_lock:
-        current = _runs.get(slug, {}).get("status")
-    if current == "running":
-        raise PipelineAgentError(f"'{slug}' is already mid-turn — wait for it to finish")
-
-    from cursor_sdk import Agent, AgentOptions
-
-    agent = Agent.resume(
-        agent_id,
-        AgentOptions(
-            api_key=api_key,
-            model=_pipeline_model(),
-            local=_local_agent_options(),
-        ),
-    )
+    acted = _parse_gate_response(message, state)
 
     with _runs_lock:
-        _runs[slug] = {"status": "starting", "error": None}
+        entry = _runs.setdefault(slug, {})
+        entry["acted"] = _live_acted(entry, state)
+        if acted and any(_same_gate(a, acted) for a in entry["acted"]):
+            raise PipelineAgentError(
+                "This gate already has a response that is queued or being "
+                "processed — wait for the agent to pick it up"
+            )
+        if entry.get("status") in ("running", "starting"):
+            # The agent is mid-turn (possibly on another repo's story). Turns
+            # are strictly serial, so don't reject: queue the response; the
+            # running turn loop sends it as soon as the agent is free.
+            if acted:
+                entry["acted"].append(acted)
+            entry.setdefault("queued", []).append({"message": message, "at": _now()})
+            return {
+                "slug": slug,
+                "agent_id": agent_id,
+                "status": "queued",
+                "queued": len(entry["queued"]),
+            }
+        # Idle: claim the run *before* the slow Agent.resume() so two
+        # near-simultaneous responses can't both start a turn.
+        previous = (entry.get("status"), entry.get("error"))
+        entry["status"] = "starting"
+        entry["error"] = None
+        if acted:
+            entry["acted"].append(acted)
+
+    try:
+        from cursor_sdk import Agent, AgentOptions
+
+        agent = Agent.resume(
+            agent_id,
+            AgentOptions(
+                api_key=api_key,
+                model=_pipeline_model(),
+                local=_local_agent_options(),
+            ),
+        )
+    except Exception:
+        with _runs_lock:
+            entry["status"], entry["error"] = previous
+            if acted and acted in entry["acted"]:
+                entry["acted"].remove(acted)
+        raise
 
     thread = threading.Thread(target=_run_turn, args=(slug, agent, message), daemon=True)
     thread.start()

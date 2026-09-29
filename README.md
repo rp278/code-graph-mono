@@ -6,8 +6,8 @@ relationships → ask questions grounded in real code.
 
 ## Layout
 
-- `api/` — Python FastAPI backend (repo registry, graph queries, rebuild trigger, chat)
-- `web/` — React dashboard (React Flow graph visualization + chat UI)
+- `api/` — Python FastAPI backend (repo registry, graph queries, rebuild trigger, Ask AI)
+- `web/` — React dashboard (React Flow graph visualization + Ask AI UI)
 
 The knowledge graph itself is built by our customized Graphify fork
 (`techfxs/graphify`) and stored in Neo4j.
@@ -36,11 +36,14 @@ curl -X POST localhost:8000/api/graph/rebuild \
   -H 'Content-Type: application/json' -d '{"repo_id":"all"}'
 ```
 
-## Chat
+## Ask AI
 
-`POST /api/chat` answers questions grounded in the graph. Set
-`ANTHROPIC_API_KEY` for AI-generated answers; without it the endpoint still
-returns the retrieved graph context.
+`POST /api/ask` starts a question answered by a read-only Cursor agent that is
+handed the relevant graph context and can read and search the real files (it
+can never edit them). It returns a `conversation_id`; poll
+`GET /api/ask/{conversation_id}` for the live status and answer. Follow-ups
+reuse the same `conversation_id`. Requires `CURSOR_API_KEY`; set `ASK_MODEL`
+to pick a model (default `auto`).
 
 ## API overview
 
@@ -52,4 +55,5 @@ returns the retrieved graph context.
 | GET | /api/graph/stats | counts by type |
 | POST | /api/query | read-only Cypher passthrough |
 | POST | /api/graph/rebuild | rebuild graph via Graphify fork |
-| POST | /api/chat | graph-grounded Q&A |
+| POST | /api/ask | start a graph-grounded Q&A (Cursor agent) |
+| GET | /api/ask/{conversation_id} | poll status / answer |

@@ -12,9 +12,8 @@ import os
 import re
 import subprocess
 import threading
-import urllib.request
 from pathlib import Path
-from typing import Any, Optional
+from typing import Any, Literal, Optional
 
 from fastapi import Depends, FastAPI, Header, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
@@ -23,11 +22,11 @@ from pydantic import BaseModel
 from dotenv import load_dotenv
 
 BASE_DIR = Path(__file__).resolve().parent.parent  # api/
-load_dotenv(BASE_DIR / ".env")  # optional: NEO4J_*, OPENAI_*, ANTHROPIC_* live here
+load_dotenv(BASE_DIR / ".env")  # optional: NEO4J_*, CURSOR_API_KEY, etc. live here
 
 # Imported after load_dotenv() on purpose: pipeline_agent reads
 # CURSOR_API_KEY from os.environ, and must see the value .env just loaded.
-from . import pipeline_agent  # noqa: E402
+from . import ask_agent, pipeline_agent  # noqa: E402
 
 REPOS_FILE = Path(os.environ.get("CODEGRAPH_REPOS", BASE_DIR / "repos.json"))
 GRAPHIFY_DIR = Path(os.environ.get("GRAPHIFY_DIR", "/home/hatch/workspace/graphify"))
@@ -35,12 +34,6 @@ GRAPHIFY_DIR = Path(os.environ.get("GRAPHIFY_DIR", "/home/hatch/workspace/graphi
 NEO4J_URI = os.environ.get("NEO4J_URI", "bolt://localhost:7687")
 NEO4J_USER = os.environ.get("NEO4J_USER", "neo4j")
 NEO4J_PASSWORD = os.environ.get("NEO4J_PASSWORD", "codegraph123")
-
-ANTHROPIC_API_KEY = os.environ.get("ANTHROPIC_API_KEY", "")
-ANTHROPIC_MODEL = os.environ.get("ANTHROPIC_MODEL", "claude-sonnet-4-20250514")
-OPENAI_API_KEY = os.environ.get("OPENAI_API_KEY", "")
-OPENAI_MODEL = os.environ.get("OPENAI_MODEL", "gpt-4o-mini")
-OPENAI_BASE_URL = os.environ.get("OPENAI_BASE_URL", "https://api.openai.com/v1")
 
 # Bearer token gating every endpoint except /health. Empty (unset) means
 # "open" — the default for local dev, where nothing is internet-facing.
@@ -108,13 +101,20 @@ class RebuildIn(BaseModel):
     repo_id: str
 
 
-class ChatIn(BaseModel):
+class AskIn(BaseModel):
     question: str
     repo_id: Optional[str] = None
+    # Omit to start a new conversation; pass the id from a previous reply to
+    # ask a follow-up in the same conversation.
+    conversation_id: Optional[str] = None
 
 
 class RequirementIn(BaseModel):
     requirement: str
+    kind: Literal["feature", "bug"] = "feature"
+    # Bug runs only: repos the reporter suspects (ids from /api/repos).
+    # A hint for the agent, not a constraint. Ignored for features.
+    repos: list[str] = []
 
 
 class RequirementRespondIn(BaseModel):
@@ -405,109 +405,33 @@ def subgraph_for(question: str, repo_id: Optional[str]) -> list[dict[str, Any]]:
         return s.run(cypher, **params).data()
 
 
-def ask_openai(question: str, context: list[dict[str, Any]]) -> str:
-    """OpenAI-compatible chat completions (OpenAI, Llama hosts, OpenRouter…)."""
-    context_text = "\n".join(
-        f"- {c['label']} ({c['type']}) in {c['file']} "
-        f"[repo: {c['repo']}] neighbors: {', '.join(c['neighbors'][:6])}"
-        for c in context
-    ) or "(no graph context found)"
-    payload = {
-        "model": OPENAI_MODEL,
-        "max_tokens": 1024,
-        "messages": [
-            {
-                "role": "system",
-                "content": (
-                    "You are codeGraph, an AI assistant that answers questions about "
-                    "a codebase using its knowledge graph. Answer from the graph "
-                    "context below. Be concrete: name files, functions, endpoints. "
-                    "If the context is insufficient, say what is missing instead of "
-                    "guessing."
-                ),
-            },
-            {
-                "role": "user",
-                "content": f"Knowledge graph context:\n{context_text}\n\n"
-                           f"Question: {question}",
-            },
-        ],
-    }
-    req = urllib.request.Request(
-        f"{OPENAI_BASE_URL.rstrip('/')}/chat/completions",
-        data=json.dumps(payload).encode(),
-        headers={
-            "content-type": "application/json",
-            "authorization": f"Bearer {OPENAI_API_KEY}",
-        },
-    )
-    with urllib.request.urlopen(req, timeout=60) as resp:
-        body = json.loads(resp.read().decode())
-    return body["choices"][0]["message"]["content"]
+# ---------------------------------------------------------------- Ask AI (Cursor agent, read-only)
+
+@app.post("/api/ask", status_code=202, dependencies=[auth])
+def ask(body: AskIn) -> dict[str, Any]:
+    """Ask a question about the codebase, answered by a read-only Cursor agent.
+
+    Graph-grounded (a subgraph for the question is handed to the agent),
+    and the agent can also open the real files. Returns at once with a
+    conversation id; poll GET /api/ask/{conversation_id}.
+    """
+    repo_id = None if body.repo_id in (None, "", "all") else body.repo_id
+    try:
+        context = subgraph_for(body.question, repo_id)
+    except Exception:  # noqa: BLE001 -- graph is a hint; the agent can still read files
+        context = []
+    try:
+        return ask_agent.start_ask(body.question, repo_id, context, body.conversation_id)
+    except ask_agent.AskError as e:
+        raise HTTPException(400, str(e))
 
 
-def ask_claude(question: str, context: list[dict[str, Any]]) -> str:
-    context_text = "\n".join(
-        f"- {c['label']} ({c['type']}) in {c['file']} "
-        f"[repo: {c['repo']}] neighbors: {', '.join(c['neighbors'][:6])}"
-        for c in context
-    ) or "(no graph context found)"
-    payload = {
-        "model": ANTHROPIC_MODEL,
-        "max_tokens": 1024,
-        "system": (
-            "You are codeGraph, an AI assistant that answers questions about "
-            "a codebase using its knowledge graph. Answer from the graph "
-            "context below. Be concrete: name files, functions, endpoints. "
-            "If the context is insufficient, say what is missing instead of "
-            "guessing."
-        ),
-        "messages": [{
-            "role": "user",
-            "content": f"Knowledge graph context:\n{context_text}\n\n"
-                       f"Question: {question}",
-        }],
-    }
-    req = urllib.request.Request(
-        "https://api.anthropic.com/v1/messages",
-        data=json.dumps(payload).encode(),
-        headers={
-            "content-type": "application/json",
-            "x-api-key": ANTHROPIC_API_KEY,
-            "anthropic-version": "2023-06-01",
-        },
-    )
-    with urllib.request.urlopen(req, timeout=60) as resp:
-        body = json.loads(resp.read().decode())
-    return "".join(
-        b.get("text", "") for b in body.get("content", []) if b.get("type") == "text"
-    )
-
-
-@app.post("/api/chat", dependencies=[auth])
-def chat(body: ChatIn) -> dict[str, Any]:
-    repo_id = None if body.repo_id in (None, "all") else body.repo_id
-    context = subgraph_for(body.question, repo_id)
-    if OPENAI_API_KEY:
-        try:
-            answer = ask_openai(body.question, context)
-        except Exception as e:  # noqa: BLE001
-            raise HTTPException(502, f"LLM call failed: {e}")
-        return {"answer": answer, "context": context}
-    if ANTHROPIC_API_KEY:
-        try:
-            answer = ask_claude(body.question, context)
-        except Exception as e:  # noqa: BLE001
-            raise HTTPException(502, f"LLM call failed: {e}")
-        return {"answer": answer, "context": context}
-    return {
-        "answer": None,
-        "message": (
-            "Set OPENAI_API_KEY (or ANTHROPIC_API_KEY) to enable AI answers. "
-            "Graph context retrieved below."
-        ),
-        "context": context,
-    }
+@app.get("/api/ask/{conversation_id}", dependencies=[auth])
+def get_ask(conversation_id: str) -> dict[str, Any]:
+    try:
+        return ask_agent.get_ask(conversation_id)
+    except ask_agent.AskError as e:
+        raise HTTPException(404, str(e))
 
 
 # ---------------------------------------------------------------- requirement pipeline (SDK-driven)
@@ -536,9 +460,29 @@ def start_requirement(body: RequirementIn) -> dict[str, Any]:
     will pause at each gate — resume it via the /respond endpoint below.
     """
     try:
-        return pipeline_agent.start_requirement(body.requirement)
+        return pipeline_agent.start_requirement(
+            body.requirement, kind=body.kind, repos=body.repos
+        )
     except pipeline_agent.PipelineAgentError as e:
         raise HTTPException(400, str(e))
+
+
+@app.post("/api/requirements/{slug}/rerun", status_code=201, dependencies=[auth])
+def rerun_requirement(slug: str) -> dict[str, Any]:
+    """Start a fresh run from an existing run's original report.
+
+    New slug, new agent, new branches; the source run is untouched. 404 if
+    the source doesn't exist, 409 if it is still mid-turn.
+    """
+    try:
+        return pipeline_agent.rerun_requirement(slug)
+    except pipeline_agent.PipelineAgentError as e:
+        msg = str(e)
+        if msg.startswith("no such requirement run"):
+            raise HTTPException(404, msg)
+        if "still working" in msg:
+            raise HTTPException(409, msg)
+        raise HTTPException(400, msg)
 
 
 @app.post("/api/requirements/{slug}/respond", dependencies=[auth])
@@ -549,6 +493,11 @@ def respond_to_requirement(slug: str, body: RequirementRespondIn) -> dict[str, A
     e.g. "gate 3_impl for shop-api: approved", "gate 1_stories for
     shop-web: revise — also cover ProductDetail", or a requirement
     change ("requirement changed: rename the field to is_on_sale").
+
+    If the agent is mid-turn (e.g. working on another repo's story) the
+    response is queued and sent automatically, in order, as soon as the
+    agent is free -- the reply is `{"status": "queued", "queued": <n>}`
+    instead of `"starting"`.
     """
     try:
         return pipeline_agent.respond_to_requirement(slug, body.message)

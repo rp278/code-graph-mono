@@ -1,0 +1,28 @@
+{
+  "requirement": "Bug: TypeError: Cannot read properties of undefined (reading 'toLowerCase')\n\nError / stack trace:\nTypeError: Cannot read properties of undefined (reading 'toLowerCase')\n ❯ slugify helpers/formatters.ts:47:33\n     45|  */\n     46| export const slugify = (queryValue: string) =>\n     47|   encodeURIComponent(queryValue.toLowerCase().replace(/ /g, '-'));\n       |                                 ^",
+  "slug": "bug-typeerror-cannot-read-properties-of",
+  "kind": "bug",
+  "agent_id": "agent-e0fb4ba2-eacc-44fe-899d-614a86ea95e7",
+  "notes": [
+    "Started via dashboard (Cursor SDK, local runtime) at 2026-09-29T05:59:52.760851+00:00.",
+    "Stage 1: located in tb-discovery-mfe helpers/formatters.ts slugify via graph + stack match."
+  ],
+  "stories": {
+    "tb-discovery-mfe": {
+      "stage": "1-analysis",
+      "gates": {
+        "1_analysis": null,
+        "2_rootcause": null,
+        "3_repro": null,
+        "4_fix": null
+      },
+      "branch": null,
+      "pr_url": null,
+      "pending_gate": {
+        "gate": "1_analysis",
+        "presented_at": "2026-09-29T06:02:00.000Z",
+        "summary": "Analysis for tb-discovery-mfe: stack and live codeGraph both point at helpers/formatters.ts slugify (line 47), which calls queryValue.toLowerCase() with no guard. WHEN slugify receives undefined/non-string it throws TypeError; expected recovery is return '' without throwing, while string inputs keep today’s encodeURIComponent slug behavior. Provisional scope fence is slugify only (plus tests in Stage 3). Artifact: tb-discovery-mfe/.pipeline/bug-typeerror-cannot-read-properties-of/bugfix.md."
+      }
+    }
+  }
+}

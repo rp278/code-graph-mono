@@ -9,7 +9,7 @@ Neo4j is optional (see [With or without Neo4j](#with-or-without-neo4j)).
 git clone https://github.com/techfxs/code-graph-wsp.git
 cd code-graph-wsp
 ./setup.sh --check     # verifies git, Node 20+, Python 3.10+, gh
-./setup.sh             # clones codegraph + graphify, links the tb-*-mfe repos, installs, creates config
+./setup.sh             # links the work repos, installs codegraph + graphify, creates config
 ```
 
 Then:
@@ -21,14 +21,19 @@ Then:
 3. Terminal B — dashboard: `cd codegraph/web && npm run dev` → http://localhost:5173
 4. Open the workspace in Cursor: `cursor code-graph.code-workspace`
 
+The dashboard's **Feature Development** screen is hidden by default. To show it, set the cookie
+`cg_feature_development_enabled=true` for `localhost:5173` (browser dev tools, Application, Cookies). The
+**View Graph**, **Ask AI** and **Fix Bugs** screens are always available.
+
 Smoke test: open **Ask AI** and ask a question about a component in `tb-discovery-mfe`
 (e.g. *"Where is GlobalScriptsSDK used?"*). An answer that names real files and line
 numbers means Cursor SDK, the API and the dashboard are all working.
 
-> The folder layout matters. The pipeline agents run from this folder and read
-> `.cursor/` from it, so keep `codegraph/`, `graphify/`, `tb-common-mfe/`,
-> `tb-discovery-mfe/`, `tb-marketing-xapi/`, `tb-discovery-xapi/`,
-> `tb-selection-xapi/`, `kairos-fabric/` and `.cursor/` side by side. The `tb-*` folders are **symlinks** to your existing checkouts in
+> This is **one repo**: `codegraph/` (API + dashboard), `graphify/` (graph builder)
+> and `.cursor/` (pipeline rules) are all tracked here. The pipeline agents run from
+> this folder and read `.cursor/` from it, so keep the work-repo links
+> (`tb-common-mfe/`, `tb-discovery-mfe/`, `tb-marketing-xapi/`, `tb-discovery-xapi/`,
+> `tb-selection-xapi/`, `kairos-fabric/`) beside them. Those are **symlinks** to your existing checkouts in
 > `~/Desktop/code` (set `TB_REPOS_DIR` if they live elsewhere), so there are no
 > second copies — but pipeline runs would touch your real working trees.
 

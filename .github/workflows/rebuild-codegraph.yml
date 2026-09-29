@@ -1,7 +1,10 @@
 name: Rebuild codeGraph
 
-# Runs whenever a commit lands on master — which is exactly what a merged
-# PR looks like from GitHub's perspective. A change to the extractor itself (this repo) should re-run against the graphed repos too, since the extraction logic is what changed.
+# Runs when a commit that touches the extractor (graphify/) lands on master —
+# which is what a merged PR looks like from GitHub's perspective. A change to
+# the extractor should re-run against the graphed repos, since the extraction
+# logic is what changed. (The work repos are separate repos and are not built
+# by this workflow.)
 #
 # OPT-IN: this does nothing unless a rebuild endpoint is configured. Set the
 # repository variable CODEGRAPH_REBUILD_URL (Settings > Secrets and variables
@@ -11,6 +14,7 @@ name: Rebuild codeGraph
 on:
   push:
     branches: [master]
+    paths: ["graphify/**", ".github/workflows/rebuild-codegraph.yml"]
 
 jobs:
   rebuild:

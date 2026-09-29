@@ -7,10 +7,9 @@
 *.pem
 *.key
 
-# The project repos live inside this folder but are their own git repos
-# (cloned or symlinked by setup.sh) — never track them here.
-/codegraph/
-/graphify/
+# codegraph/ and graphify/ are part of this monorepo (tracked).
+# The work repos below are the codebases being analysed. They live in their own
+# git repos elsewhere (symlinked here by setup.sh) — never track them here.
 /tb-common-mfe
 /tb-discovery-mfe
 /tb-marketing-xapi

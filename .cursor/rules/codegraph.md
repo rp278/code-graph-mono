@@ -1,8 +1,8 @@
 # codeGraph — workspace context
 
-This workspace contains 4 repos that form one system: a cross-repo code knowledge
-graph with an agent API and dashboard. All repos live under `~/Desktop/bot/`,
-mirrored on GitHub under the `techfxs` org, branch `master`.
+This workspace is one monorepo (codegraph API + dashboard, graphify, pipeline rules)
+plus symlinked work repos that together form a cross-repo code knowledge graph with
+an agent API and dashboard. Branch `master`.
 
 ## The repos
 
@@ -86,9 +86,9 @@ source files → extraction (per repo) → link pass (global) → JSON → Neo4j
 
 ## Conventions
 
-- Separate git repos side by side in one workspace folder (`codegraph`, `graphify`,
-  `tb-*` work repos), plus this folder's own repo (`.cursor/`, `setup.sh`,
-  `SETUP.md`). Never auto-sync.
+- One monorepo holds `codegraph/`, `graphify/`, `.cursor/`, `setup.sh` and
+  `SETUP.md`. The `tb-*` work repos and `kairos-fabric` are NOT part of it: they are
+  symlinks to separate checkouts (gitignored). Never auto-sync.
 - Secrets live in `.env` files only — never in chat, never in git.
 - Dashboard: single repo selector in the header (default "All repos"); selecting one
   repo includes its direct cross-repo neighbors; chat scope label is centered.

@@ -1,8 +1,8 @@
 #!/usr/bin/env bash
 # One-shot setup for the CodeGraph workspace on a fresh machine.
 #
-#   git clone https://github.com/techfxs/code-graph-wsp.git && cd code-graph-wsp
-#   ./setup.sh            # clone codegraph+graphify, link the tb-*-mfe repos, install, create config
+#   git clone <your code-graph-wsp repo url> && cd code-graph-wsp
+#   ./setup.sh            # link the work repos, install api + dashboard, create config
 #   ./setup.sh --check    # only verify prerequisites (changes nothing)
 #   ./setup.sh --with-graph   # also install the graph builder (needs Neo4j to be useful)
 #
@@ -11,11 +11,11 @@
 set -euo pipefail
 
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-OWNER="${GH_OWNER:-techfxs}"
-REPOS="codegraph graphify"
-# Work repos the pipelines target. They are NOT cloned here: they already live
-# on disk and are symlinked into this folder (override the location with
-# TB_REPOS_DIR).
+# codegraph/ (api + web) and graphify/ are part of THIS repo (monorepo), so
+# there is nothing to clone for them.
+# Work repos the pipelines target. They are NOT part of this repo and are NOT
+# cloned here: they already live on disk and are symlinked into this folder
+# (override the location with TB_REPOS_DIR).
 TB_REPOS="tb-common-mfe tb-discovery-mfe tb-marketing-xapi tb-discovery-xapi tb-selection-xapi kairos-fabric"
 TB_REPOS_DIR="${TB_REPOS_DIR:-$HOME/Desktop/code}"
 CHECK_ONLY=0
@@ -70,14 +70,10 @@ if [ "$PROBLEMS" -gt 0 ]; then
 fi
 [ "$CHECK_ONLY" -eq 1 ] && { printf '\nAll prerequisites OK.\n'; exit 0; }
 
-# --- clone repos -----------------------------------------------------------
-step "2. Repositories (into $ROOT)"
-for r in $REPOS; do
-  if [ -d "$ROOT/$r/.git" ]; then
-    ok "$r already present"
-  else
-    git clone --quiet "https://github.com/$OWNER/$r.git" "$ROOT/$r" && ok "cloned $r"
-  fi
+# --- work repos ------------------------------------------------------------
+step "2. Work repos (symlinked into $ROOT)"
+for r in codegraph graphify; do
+  [ -d "$ROOT/$r" ] && ok "$r/ is part of this repo" || fail "$r/ is missing — is this a full checkout of the monorepo?"
 done
 
 for r in $TB_REPOS; do

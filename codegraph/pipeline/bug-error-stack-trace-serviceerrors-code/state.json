@@ -1,0 +1,28 @@
+{
+  "requirement": "Bug: {\n\nError / stack trace:\n{\n    \"serviceErrors\": [\n        {\n            \"code\": \"ECS_40001\",\n            \"message\": \"Bad request to downstream service.\"\n        }\n    ]\n}",
+  "slug": "bug-error-stack-trace-serviceerrors-code",
+  "kind": "bug",
+  "agent_id": "agent-cfe436ac-ebe6-4470-9106-6c063516bd1c",
+  "notes": [
+    "Started via dashboard (Cursor SDK, local runtime) at 2026-09-29T20:49:40.481840+00:00.",
+    "Gate 1 presented: located ECS_40001 in ecom-content-stack; candidate cause is application-local.yaml ContentStack base-url defaults ending in /v3/test."
+  ],
+  "stories": {
+    "ecom-content-stack": {
+      "stage": "1-analysis",
+      "gates": {
+        "1_analysis": null,
+        "2_rootcause": null,
+        "3_repro": null,
+        "4_fix": null
+      },
+      "branch": null,
+      "pr_url": null,
+      "pending_gate": {
+        "gate": "1_analysis",
+        "presented_at": "2026-09-29T20:55:00.000000+00:00",
+        "summary": "Analysis for ecom-content-stack: the reported serviceErrors payload (ECS_40001 / Bad request to downstream service.) is defined and emitted by ContentStackExceptionHandler.defaultBadRequestError(). Graph + file search show the local profile’s content-stack-service and content-stack-entry-service default base URLs incorrectly end in /v3/test (other envs use /v3), which forces bad requests to ContentStack under local defaults. Scope fence: only those two defaults in application-local.yaml. No source fix yet — awaiting Gate 1 approval of bugfix.md."
+      }
+    }
+  }
+}

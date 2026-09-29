@@ -96,11 +96,13 @@ cd codegraph/api && .venv/bin/uvicorn src.main:app --port 8000
 cd codegraph/web && npm run dev
 ```
 
-### 7. Open the workspace in Cursor
+### 7. Open the folder in Cursor
 
 ```bash
-cursor code-graph.code-workspace
+cursor .
 ```
+
+The cloned or linked work repos sit in this folder, so you see them next to `codegraph/` and `graphify/`.
 
 ### Smoke test
 

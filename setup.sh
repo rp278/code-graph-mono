@@ -168,6 +168,6 @@ cat <<EOF
   1. Put your key in  codegraph/api/.env   (CURSOR_API_KEY=...)
   2. Terminal A:  cd codegraph/api && .venv/bin/uvicorn src.main:app --port 8000
   3. Terminal B:  cd codegraph/web && npm run dev      -> http://localhost:5173
-  4. Open the workspace in Cursor:  cursor code-graph.code-workspace
+  4. Open this folder in Cursor:  cursor .
   Neo4j is optional — see SETUP.md ("With or without Neo4j").
 EOF

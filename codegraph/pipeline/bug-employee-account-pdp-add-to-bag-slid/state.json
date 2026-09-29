@@ -1,0 +1,38 @@
+{
+  "requirement": "Bug: Employee Account - PDP Add to bag slide out \u201cFree shipping message display for l\n\nError / stack trace:\nEmployee Account - PDP Add to bag slide out \u201cFree shipping message display for less than threshold\n\nExtra details:\nIssue: Free shipping messaging is inconsistent for Employee accounts across PDP, Add to Bag Slideout, and Cart.\n\nEnvironment: Production\n\nSteps : \n\nLogin with employee account \n\nAdd product which is less than free ship threshold price \n\nobserved ATB slider / minicart / cart\n\n\n\nPDP: Displays \u201cFree Shipping\u201d with no minimum purchase threshold for all PF users.( Employee does not qulify free ship below threshold however , employee account shoes Free qulifying message )\n\nAdd to Bag Slideout: For Employee accounts, the free shipping message is displayed even when the order is below the applicable free-shipping threshold.\n\nMinicart and Cart: No free-shipping message is displayed when the order is below the threshold, which aligns with the actual Employee shipping eligibility.\n\nExpected:\nThe free-shipping messaging should be consistent across PDP, Add to Bag Slideout, and Cart for Employee accounts and should accurately reflect the applicable shipping threshold.",
+  "slug": "bug-employee-account-pdp-add-to-bag-slid",
+  "kind": "bug",
+  "agent_id": "agent-2b076165-9e0e-44f4-adf1-6d6774bc1165",
+  "notes": [
+    "Started via dashboard (Cursor SDK, local runtime) at 2026-09-29T22:23:43.412186+00:00.",
+    "Gate 1 presented: located loyaltyMember free-ship overrides on PDP/ATB in tb-discovery-mfe; minicart mapper in tb-common-mfe already correct via shippingCharges; base_branch=main."
+  ],
+  "stories": {
+    "tb-discovery-mfe": {
+      "stage": "1-analysis",
+      "gates": {
+        "1_analysis": null,
+        "2_rootcause": null,
+        "3_repro": null,
+        "4_fix": null
+      },
+      "base_branch": "main",
+      "branch": null,
+      "pr_url": null,
+      "pending_gate": {
+        "gate": "1_analysis",
+        "presented_at": "2026-09-29T22:27:18.652492+00:00",
+        "summary": "Analysis for tb-discovery-mfe: Employee+PF accounts are classified as loyaltyMember, so PDP ShippingCard/ShippingPromoBanner and ATB slideout force free-shipping messaging even when cart shippingCharges > 0 (below threshold). Minicart correctly hides the message via mapShippingBannerInfo. Provisional scope is the loyalty overrides in PdpComponent, GiftCardLP, ShippingCard, and PdpDetailsLayout on base branch main. Open question: prefer trusting cart charges over inventing an employee flag (none found in these repos)."
+      }
+    }
+  },
+  "repo_hints": [
+    "tb-discovery-mfe",
+    "tb-selection-xapi",
+    "ecom-content-stack",
+    "tb-discovery-xapi",
+    "tb-marketing-xapi",
+    "tb-common-mfe",
+    "kairos-fabric"
+  ]
+}

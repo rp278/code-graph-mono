@@ -88,12 +88,11 @@ GH_READY=0
 if command -v gh >/dev/null && gh auth status >/dev/null 2>&1; then GH_READY=1; fi
 
 MISSING=0
-LINKED=0
 while IFS=$'\t' read -r name github _lang; do
   if [ -e "$ROOT/$name" ]; then
     ok "$name already present"
   elif [ -d "$TB_REPOS_DIR/$name/.git" ]; then
-    ln -s "$TB_REPOS_DIR/$name" "$ROOT/$name" && LINKED=1 && ok "linked $name -> $TB_REPOS_DIR/$name"
+    ln -s "$TB_REPOS_DIR/$name" "$ROOT/$name" && ok "linked $name -> $TB_REPOS_DIR/$name"
   elif [ "$NO_CLONE" -eq 1 ]; then
     warn "$name not found (skipped: --no-clone). Clone $github here, or set TB_REPOS_DIR"; MISSING=$((MISSING + 1))
   elif [ "$GH_READY" -ne 1 ]; then
@@ -139,12 +138,6 @@ PY
   ok "created api/repos.local.json for $ROOT"
 else
   ok "api/repos.local.json already exists (left as is)"
-fi
-
-# Repos that are symlinks to another folder need that folder for the Docker graph job.
-if [ "$LINKED" -eq 1 ] && ! grep -q -E '^TB_REPOS_DIR=' "$API/.env"; then
-  printf '\n# Where the symlinked work repos really live (used by the Docker graph job)\nTB_REPOS_DIR=%s\n' "$TB_REPOS_DIR" >> "$API/.env"
-  ok "added TB_REPOS_DIR to api/.env"
 fi
 
 if grep -q -E '^CURSOR_API_KEY=.+' "$API/.env"; then

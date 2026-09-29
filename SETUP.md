@@ -9,7 +9,8 @@ Neo4j (for the graph view) is optional and runs in Docker.
 |---|---|
 | API (FastAPI) and the pipeline agents | your machine, from `codegraph/api` |
 | Dashboard (React) | your machine, from `codegraph/web` |
-| Neo4j + graph builder (optional, for **View Graph**) | Docker, via `docker-compose.yml` |
+| Neo4j (optional, for **View Graph**) | one Docker container |
+| Graph builder `graphify` (optional) | your machine, from `graphify/` |
 | Work repos the agents read and change | cloned next to this repo (or linked from an existing checkout) |
 
 ## Setup, step by step
@@ -22,7 +23,7 @@ Neo4j (for the graph view) is optional and runs in Docker.
 | Node 20+ | dashboard | `brew install node` |
 | Python 3.10+ | API, Cursor SDK | `brew install python@3.12` |
 | GitHub CLI `gh` | clones the work repos, opens PRs | `brew install gh`, then `gh auth login` (GitHub.com, HTTPS) |
-| Docker Desktop | only for the graph view (Neo4j) | https://www.docker.com/products/docker-desktop |
+| Docker Desktop | only for the graph view (runs Neo4j) | https://www.docker.com/products/docker-desktop |
 
 You also need **access to the work repos** on GitHub (`MensWearhouse/*`, see
 `repos.manifest.json`). They are private, so ask an org admin if `setup.sh` says you have no access.
@@ -51,7 +52,7 @@ It is safe to re-run and never overwrites your settings. It will:
 3. Create `codegraph/api/.env` and `codegraph/api/repos.local.json` (the repo paths on this machine).
 4. Run `npm install` for the dashboard.
 
-Add `--with-graph` to also install the graph builder without Docker.
+Add `--with-graph` to also install the graph builder (needed for the graph view).
 
 ### 4. Add your Cursor key
 
@@ -65,16 +66,25 @@ Create one at https://cursor.com/dashboard/integrations. Never paste it in chat 
 
 ### 5. (Optional) Start Neo4j and build the graph
 
-Skip this if you only need Ask AI and Fix Bugs. Otherwise set a password (8+ characters) in
-`codegraph/api/.env` (`NEO4J_PASSWORD=...`), then:
+Skip this if you only need Ask AI and Fix Bugs. Otherwise pick a password (8+ characters), put it in
+`codegraph/api/.env` as `NEO4J_PASSWORD=...`, and start Neo4j once (it keeps running and restarts with Docker):
 
 ```bash
-docker compose --env-file codegraph/api/.env up -d neo4j        # once; it keeps running
-docker compose --env-file codegraph/api/.env run --rm graphify  # builds the graph; repeat to refresh
+docker run -d --name codegraph-neo4j --restart unless-stopped \
+  -p 127.0.0.1:7474:7474 -p 127.0.0.1:7687:7687 \
+  -v codegraph_neo4j:/data -e NEO4J_AUTH=neo4j/<your-password> neo4j:5
 ```
 
-Check http://127.0.0.1:8000/health → `"neo4j":"up"` once the API is running.
-More detail is in [Docker](#docker-graph-database-and-graph-builder).
+Then build the graph (install the builder once with `./setup.sh --with-graph`):
+
+```bash
+cd graphify
+NEO4J_PASSWORD=<your-password> .venv/bin/python -m graphify.codegraph \
+  --repos ../codegraph/api/repos.local.json --push
+```
+
+Repeat the second command whenever you want to refresh the graph. Check
+http://127.0.0.1:8000/health → `"neo4j":"up"` once the API is running.
 
 ### 6. Start the API and the dashboard
 
@@ -120,7 +130,6 @@ runs will touch your real working tree, so keep it clean and on its default bran
 | `ASK_MODEL` | No | Model for Ask AI (default `auto`) |
 | `PIPELINE_MODEL` | No | Model for the pipelines (default `auto`) |
 | `NEO4J_URI` / `NEO4J_USER` / `NEO4J_PASSWORD` | Only with Neo4j | Graph database connection |
-| `TB_REPOS_DIR` | Only if repos are symlinks | Folder the symlinked repos really live in (added by `setup.sh`; the Docker graph job needs it) |
 | `API_TOKEN` | No | Set only if the API is reachable from the internet |
 
 Model ids: `claude-sonnet-5-5`, `claude-opus-5-5`, `gpt-5.6-sol`, `composer-2`,
@@ -133,47 +142,28 @@ Model ids: `claude-sonnet-5-5`, `claude-opus-5-5`, `gpt-5.6-sol`, `composer-2`,
 | **No Neo4j** (simplest) | Ask AI, Fix Bugs, Feature Development. Whenever the graph has no answer or is unreachable, the agents search the code themselves and say so in their artifacts. The **View Graph** screen is empty. |
 | **Neo4j** | Everything, including View Graph and graph-assisted analysis. |
 
-The easiest way to get Neo4j is Docker (below). Without Docker, install Neo4j Desktop, create a local
-5.x DBMS, set `NEO4J_PASSWORD` in `codegraph/api/.env`, and build the graph:
+Neo4j runs in one Docker container (step 5). Without Docker, install Neo4j Desktop and create a local 5.x
+DBMS instead; the settings and the graph build command are the same.
 
-```bash
-./setup.sh --with-graph                         # installs the graph builder
-cd graphify
-NEO4J_PASSWORD=<your-password> .venv/bin/python -m graphify.codegraph \
-  --repos ../codegraph/api/repos.local.json --push
-```
+The dashboard's **Rebuild** button also builds the graph, but it first runs `git pull --ff-only` in every
+work repo. Prefer the command in step 5. A local build reads your checkouts, so it also reflects uncommitted
+changes.
 
-(The dashboard's **Rebuild** button also builds the graph, but it first runs `git pull --ff-only`
-in every work repo. Prefer the commands above.) A local build reads your checkouts, so it also
-reflects uncommitted changes.
+### Graph builder notes
 
-## Docker (graph database and graph builder)
+- By default the build writes a `graphify-out/` cache folder **inside each work repo** (it shows up as
+  untracked in `git status`). To keep the repos clean, set `GRAPHIFY_CACHE_DIR` to a folder outside them,
+  e.g. `GRAPHIFY_CACHE_DIR=$HOME/.cache/graphify`, when you run the build.
+- The cache is keyed by file content only, so after changing the extractors, delete the cache folder.
 
-`docker-compose.yml` runs Neo4j and the graph build in containers. The API, the dashboard and the
-pipeline agents stay on your machine on purpose: they need your git/`gh` credentials and
-toolchains, and they edit the real work repos.
+### Neo4j container notes
 
-```bash
-# Neo4j (data persists in a Docker volume; it restarts with Docker)
-docker compose --env-file codegraph/api/.env up -d neo4j
-
-# Build the graph and push it to that Neo4j (repos are mounted read-only)
-docker compose --env-file codegraph/api/.env run --rm graphify
-```
-
-Run `./setup.sh` first: the graph job needs `codegraph/api/repos.local.json`.
-
-Notes:
-
-- The graph job finds each repo by name: a cloned folder in this directory, or, for symlinked repos,
-  under `TB_REPOS_DIR`. It never runs git and never writes into the repos; its extraction cache lives
-  in the `code-graph_graphify_cache` volume. If you change the extractors, reset the cache with
-  `docker volume rm code-graph_graphify_cache`, because entries are keyed by file content only.
-- Ports 7474/7687 are bound to `127.0.0.1`. If another Neo4j already uses them, set
-  `NEO4J_HTTP_PORT` / `NEO4J_BOLT_PORT` in `codegraph/api/.env` and match `NEO4J_URI`.
-- `NEO4J_PASSWORD` only takes effect when the volume is first created. To change it later:
-  `docker compose --env-file codegraph/api/.env down -v` (this deletes the graph; rebuild it with the
-  `graphify` job).
+- If another Neo4j already uses ports 7474/7687, change the left side of the `-p` options and set
+  `NEO4J_URI` in `codegraph/api/.env` to match (e.g. `bolt://localhost:7688`).
+- `NEO4J_AUTH` only takes effect when the volume is first created. To change the password later, remove
+  the container and volume (`docker rm -f codegraph-neo4j && docker volume rm codegraph_neo4j`, this
+  deletes the graph), then start it again and rebuild the graph.
+- Stop or start it with `docker stop codegraph-neo4j` / `docker start codegraph-neo4j`.
 
 ## GitHub access (needed for the pipelines)
 
@@ -200,7 +190,6 @@ and, if that API requires a token, the secret `CODEGRAPH_API_TOKEN`.
 - **`ModuleNotFoundError: cursor_sdk`** — re-run `./setup.sh` (installs `cursor-sdk`), and start uvicorn from `codegraph/api/.venv`.
 - **"CURSOR_API_KEY is not set"** — key missing or empty in `codegraph/api/.env`; restart the API.
 - **Dashboard says "Cannot reach the API"** — the API isn't running on port 8000, or the dashboard's origin isn't allowed: set `ALLOWED_ORIGINS` in `codegraph/api/.env` (default allows `localhost:5173`).
-- **`neo4j: down` in `/health`** — fine if you're running without Neo4j; otherwise start it (`up -d neo4j`) and check `NEO4J_PASSWORD` and the ports.
-- **Graph job says "skip (not found)"** — the repos are symlinks and the container can't follow them; set `TB_REPOS_DIR` in `codegraph/api/.env` to the folder they point to.
+- **`neo4j: down` in `/health`** — fine if you're running without Neo4j; otherwise start it (`docker start codegraph-neo4j`) and check `NEO4J_PASSWORD` and the ports.
 - **Python too old** — the Cursor SDK needs 3.10+ (`brew install python@3.12`), then delete `codegraph/api/.venv` and re-run `./setup.sh`.
 - **A run stuck at "Idle" after a restart** — restarting the API kills in-flight agents; select the run and click **Restart**.

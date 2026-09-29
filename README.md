@@ -26,7 +26,6 @@ The design is written up in [`docs/HACKATHON_DESIGN.md`](docs/HACKATHON_DESIGN.m
 | [`graphify/`](graphify/README.md) | The graph builder: extracts nodes and edges from the code and loads them into Neo4j |
 | [`.cursor/`](.cursor) | Rules and skills that drive the Fix Bugs and Feature pipelines |
 | [`repos.manifest.json`](repos.manifest.json) | The work repos the agents read and change, and where to clone them from |
-| [`docker-compose.yml`](docker-compose.yml) | Optional Neo4j and graph-build job |
 | [`setup.sh`](setup.sh) | One-shot setup script |
 | [`docs/`](docs) | Design doc and slides |
 
@@ -50,14 +49,16 @@ cd codegraph/api && .venv/bin/uvicorn src.main:app --port 8000     # terminal A:
 cd codegraph/web && npm run dev                                    # terminal B: dashboard, http://localhost:5173
 ```
 
-Ask AI and Fix Bugs work at this point. For **View Graph**, start Neo4j and build the graph (optional):
+Ask AI and Fix Bugs work at this point. For **View Graph**, run Neo4j in Docker and build the graph (optional, see SETUP.md step 5):
 
 ```bash
-docker compose --env-file codegraph/api/.env up -d neo4j
-docker compose --env-file codegraph/api/.env run --rm graphify
+docker run -d --name codegraph-neo4j --restart unless-stopped -p 127.0.0.1:7474:7474 -p 127.0.0.1:7687:7687 \
+  -v codegraph_neo4j:/data -e NEO4J_AUTH=neo4j/<your-password> neo4j:5
+./setup.sh --with-graph && cd graphify && NEO4J_PASSWORD=<your-password> \
+  .venv/bin/python -m graphify.codegraph --repos ../codegraph/api/repos.local.json --push
 ```
 
-The full, step-by-step guide, settings, Docker notes and troubleshooting are in **[SETUP.md](SETUP.md)**.
+The full, step-by-step guide, settings, Neo4j notes and troubleshooting are in **[SETUP.md](SETUP.md)**.
 
 ## How it fits together
 
@@ -68,7 +69,7 @@ work repos ──► graphify ──► Neo4j ──► API (FastAPI) ──► 
 ```
 
 The API and the agents run on your machine because they need your git and `gh` credentials and edit the real work
-repos. Neo4j and the graph build can run in Docker.
+repos. Neo4j runs in Docker.
 
 ## Notes
 

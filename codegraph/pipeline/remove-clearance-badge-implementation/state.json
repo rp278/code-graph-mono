@@ -1,0 +1,49 @@
+{
+  "requirement": "Remove clearance badge implementation.",
+  "slug": "remove-clearance-badge-implementation",
+  "agent_id": "agent-29a65c10-089a-4f5a-891d-b42629041842",
+  "notes": [
+    "Started via dashboard (Cursor SDK, local runtime) at 2026-09-28T19:50:14.133014+00:00.",
+    "Stage 1 complete (headless): grounded against live codegraph (serializeProduct/initDb/ProductCard/ProductDetail) + post-clearance-badge and post-just-for-today source. Affected repos: shop-api, shop-web. Reverses is_on_sale/Clearance end-to-end; leaves is_just_for_today/Just For Today untouched. Presenting Gate 1 for shop-api.",
+    "Gate 1 (1_stories) approved for shop-api. Advanced shop-api to Stage 2; presenting Gate 2 (design). shop-web Gate 1 still pending.",
+    "Gate 2 (2_plan) approved for shop-api. Implemented on pipeline/remove-clearance-badge-implementation/shop-api, live-verified (fresh DROP-free seed + migrate DROP COLUMN + POST ignore stray is_on_sale + PUT/restart JFT), opened PR #3, presenting Gate 3.",
+    "Gate 3 (3_impl) approved for shop-api. Traceability matrix 6/6 verified, posted on PR #3, presenting Gate 4.",
+    "Gate 4 (4_traceability) approved for shop-api. QA checklist 9 steps prepared and posted on PR #3, presenting Gate 5.",
+    "Gate 5 (5_qa) approved for shop-api. Squash-merged PR #3 -> fabda7c. Presenting Gate 1 for shop-web.",
+    "Gate 1 (1_stories) approved for shop-web. Advanced to Stage 2; presenting Gate 2 (design).",
+    "Gate 2 (2_plan) approved for shop-web. Implemented badge UI removal, live Playwright-verified (0 Clearance / 0 .badge-sale; 2 JFT on list; Headphones category only; Aurora category+JFT), opened shop-web PR #3, presenting Gate 3.",
+    "Gate 3 (3_impl) approved for shop-web. Traceability matrix 5/5 verified, posted on PR #3, presenting Gate 4.",
+    "Gate 4 (4_traceability) approved for shop-web. QA checklist prepared and posted on PR #3, presenting Gate 5.",
+    "Gate 5 (5_qa) approved for shop-web. Squash-merged shop-web PR #3 -> 4566694. Both stories done; pipeline run complete."
+  ],
+  "stories": {
+    "shop-api": {
+      "stage": "done",
+      "gates": {
+        "1_stories": "approved",
+        "2_plan": "approved",
+        "3_impl": "approved",
+        "4_traceability": "approved",
+        "5_qa": "approved"
+      },
+      "branch": "pipeline/remove-clearance-badge-implementation/shop-api",
+      "pr_url": "https://github.com/techfxs/shop-api/pull/3",
+      "merge_status": "merged",
+      "merge_commit": "fabda7c"
+    },
+    "shop-web": {
+      "stage": "done",
+      "gates": {
+        "1_stories": "approved",
+        "2_plan": "approved",
+        "3_impl": "approved",
+        "4_traceability": "approved",
+        "5_qa": "approved"
+      },
+      "branch": "pipeline/remove-clearance-badge-implementation/shop-web",
+      "pr_url": "https://github.com/techfxs/shop-web/pull/3",
+      "merge_status": "merged",
+      "merge_commit": "4566694"
+    }
+  }
+}

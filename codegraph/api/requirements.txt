@@ -1,0 +1,6 @@
+fastapi
+uvicorn[standard]
+neo4j
+pydantic
+python-dotenv
+cursor-sdk>=1.0.32

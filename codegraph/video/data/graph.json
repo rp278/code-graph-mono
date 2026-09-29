@@ -1,0 +1,557 @@
+{
+ "repos": [
+  {
+   "id": "tb-common-mfe",
+   "name": "tb-common-mfe",
+   "language": "typescript",
+   "path": "/Users/rp278/Desktop/bot/code-graph-wsp/tb-common-mfe"
+  },
+  {
+   "id": "tb-discovery-mfe",
+   "name": "tb-discovery-mfe",
+   "language": "typescript",
+   "path": "/Users/rp278/Desktop/bot/code-graph-wsp/tb-discovery-mfe"
+  },
+  {
+   "id": "tb-marketing-xapi",
+   "name": "tb-marketing-xapi",
+   "language": "typescript",
+   "path": "/Users/rp278/Desktop/bot/code-graph-wsp/tb-marketing-xapi"
+  },
+  {
+   "id": "tb-discovery-xapi",
+   "name": "tb-discovery-xapi",
+   "language": "java",
+   "path": "/Users/rp278/Desktop/bot/code-graph-wsp/tb-discovery-xapi"
+  },
+  {
+   "id": "tb-selection-xapi",
+   "name": "tb-selection-xapi",
+   "language": "java",
+   "path": "/Users/rp278/Desktop/bot/code-graph-wsp/tb-selection-xapi"
+  },
+  {
+   "id": "kairos-fabric",
+   "name": "kairos-fabric",
+   "language": "typescript",
+   "path": "/Users/rp278/Desktop/bot/code-graph-wsp/kairos-fabric"
+  }
+ ],
+ "stats": {
+  "nodes": 13203,
+  "edges": 35905
+ },
+ "repoCounts": {
+  "external": 1,
+  "kairos-fabric": 761,
+  "tb-common-mfe": 3375,
+  "tb-discovery-mfe": 4203,
+  "tb-discovery-xapi": 2671,
+  "tb-marketing-xapi": 254,
+  "tb-selection-xapi": 1938
+ },
+ "links": [
+  {
+   "source": "tb-discovery-mfe",
+   "target": "tb-selection-xapi",
+   "relation": "PROXIES_TO",
+   "count": 36
+  },
+  {
+   "source": "tb-discovery-mfe",
+   "target": "tb-common-mfe",
+   "relation": "DEPENDS_ON",
+   "count": 10
+  },
+  {
+   "source": "tb-common-mfe",
+   "target": "kairos-fabric",
+   "relation": "USES_PACKAGE",
+   "count": 9
+  },
+  {
+   "source": "tb-discovery-mfe",
+   "target": "tb-common-mfe",
+   "relation": "USES_PACKAGE",
+   "count": 9
+  },
+  {
+   "source": "tb-common-mfe",
+   "target": "tb-marketing-xapi",
+   "relation": "FETCHES",
+   "count": 8
+  },
+  {
+   "source": "tb-common-mfe",
+   "target": "kairos-fabric",
+   "relation": "DEPENDS_ON",
+   "count": 6
+  },
+  {
+   "source": "tb-common-mfe",
+   "target": "tb-discovery-xapi",
+   "relation": "CALLS_SERVICE",
+   "count": 6
+  },
+  {
+   "source": "tb-common-mfe",
+   "target": "tb-discovery-xapi",
+   "relation": "FETCHES",
+   "count": 6
+  },
+  {
+   "source": "tb-discovery-mfe",
+   "target": "tb-common-mfe",
+   "relation": "PROXIES_TO",
+   "count": 4
+  },
+  {
+   "source": "tb-discovery-mfe",
+   "target": "tb-marketing-xapi",
+   "relation": "CALLS_SERVICE",
+   "count": 3
+  },
+  {
+   "source": "tb-discovery-mfe",
+   "target": "tb-selection-xapi",
+   "relation": "CALLS_SERVICE",
+   "count": 3
+  },
+  {
+   "source": "tb-discovery-mfe",
+   "target": "tb-discovery-xapi",
+   "relation": "CALLS_SERVICE",
+   "count": 3
+  },
+  {
+   "source": "tb-common-mfe",
+   "target": "tb-marketing-xapi",
+   "relation": "CALLS_SERVICE",
+   "count": 2
+  },
+  {
+   "source": "tb-discovery-mfe",
+   "target": "kairos-fabric",
+   "relation": "USES_PACKAGE",
+   "count": 1
+  },
+  {
+   "source": "tb-discovery-mfe",
+   "target": "kairos-fabric",
+   "relation": "DEPENDS_ON",
+   "count": 1
+  },
+  {
+   "source": "tb-common-mfe",
+   "target": "tb-discovery-mfe",
+   "relation": "FETCHES",
+   "count": 1
+  },
+  {
+   "source": "tb-common-mfe",
+   "target": "external",
+   "relation": "CALLS_SERVICE",
+   "count": 1
+  },
+  {
+   "source": "tb-common-mfe",
+   "target": "tb-selection-xapi",
+   "relation": "FETCHES",
+   "count": 1
+  },
+  {
+   "source": "tb-common-mfe",
+   "target": "tb-selection-xapi",
+   "relation": "CALLS_SERVICE",
+   "count": 1
+  },
+  {
+   "source": "tb-discovery-mfe",
+   "target": "tb-common-mfe",
+   "relation": "FETCHES",
+   "count": 1
+  }
+ ],
+ "candidates": [
+  {
+   "label": "GET /api-replatform/v1/selection-xapi/:path*",
+   "repo": "tb-discovery-mfe",
+   "degree": 20
+  },
+  {
+   "label": "POST /api-replatform/v1/selection-xapi/:path*",
+   "repo": "tb-discovery-mfe",
+   "degree": 20
+  },
+  {
+   "label": "GET /api-replatform/config",
+   "repo": "tb-discovery-mfe",
+   "degree": 7
+  },
+  {
+   "label": "POST /api-replatform/analytics/abtasty",
+   "repo": "tb-discovery-mfe",
+   "degree": 7
+  },
+  {
+   "label": "POST /api-replatform/telemetry/xapi",
+   "repo": "tb-discovery-mfe",
+   "degree": 7
+  },
+  {
+   "label": "GET /api-replatform/discovery/search/:searchTerm*",
+   "repo": "tb-discovery-mfe",
+   "degree": 6
+  },
+  {
+   "label": "GET /api/common/store-locator/:path*",
+   "repo": "tb-discovery-mfe",
+   "degree": 6
+  },
+  {
+   "label": "GET /api/common/stores/nearest",
+   "repo": "tb-common-mfe",
+   "degree": 5
+  },
+  {
+   "label": "POST /api/selection-xapi/inventory/skus",
+   "repo": "tb-selection-xapi",
+   "degree": 5
+  },
+  {
+   "label": "GET /api/selection-xapi/store-configs/:brandId/:propertyName",
+   "repo": "tb-selection-xapi",
+   "degree": 4
+  },
+  {
+   "label": "GET /api/selection-xapi/products/key/:key",
+   "repo": "tb-selection-xapi",
+   "degree": 4
+  },
+  {
+   "label": "GET /api/common/store-locator/stores-by-zip",
+   "repo": "tb-common-mfe",
+   "degree": 4
+  }
+ ],
+ "hood": {
+  "center": {
+   "loc": "L93",
+   "file": "/tb-discovery-mfe/app/api-replatform/v1/selection-xapi/[...path]/route.ts",
+   "repo": "tb-discovery-mfe",
+   "degree": 20,
+   "label": "GET /api-replatform/v1/selection-xapi/:path*",
+   "id": "tb-discovery-mfe::endpoint:tb-discovery-mfe:GET:/api-replatform/v1/selection-xapi/:path*",
+   "type": "endpoint"
+  },
+  "nodes": [
+   {
+    "loc": "L1",
+    "file": "/tb-discovery-mfe/app/api-replatform/v1/selection-xapi/[...path]/route.ts",
+    "repo": "tb-discovery-mfe",
+    "degree": 85,
+    "label": "route.ts",
+    "id": "tb-discovery-mfe::route",
+    "type": "code"
+   },
+   {
+    "loc": "L51",
+    "file": "/tb-selection-xapi/src/main/java/com/tailoredbrands/selection/controller/InventoryController.java",
+    "repo": "tb-selection-xapi",
+    "degree": 5,
+    "label": "POST /api/selection-xapi/inventory/skus",
+    "id": "tb-selection-xapi::endpoint:tb-selection-xapi:POST:/api/selection-xapi/inventory/skus",
+    "type": "endpoint"
+   },
+   {
+    "loc": "L51",
+    "file": "/tb-selection-xapi/src/main/java/com/tailoredbrands/selection/controller/ContentstackController.java",
+    "repo": "tb-selection-xapi",
+    "degree": 4,
+    "label": "GET /api/selection-xapi/contentstack/entriesbyurl",
+    "id": "tb-selection-xapi::endpoint:tb-selection-xapi:GET:/api/selection-xapi/contentstack/entriesbyurl",
+    "type": "endpoint"
+   },
+   {
+    "loc": "L98",
+    "file": "/tb-selection-xapi/src/main/java/com/tailoredbrands/selection/controller/ContentstackController.java",
+    "repo": "tb-selection-xapi",
+    "degree": 4,
+    "label": "GET /api/selection-xapi/contentstack/entries",
+    "id": "tb-selection-xapi::endpoint:tb-selection-xapi:GET:/api/selection-xapi/contentstack/entries",
+    "type": "endpoint"
+   },
+   {
+    "loc": "L45",
+    "file": "/tb-selection-xapi/src/main/java/com/tailoredbrands/selection/controller/FeatureFlagController.java",
+    "repo": "tb-selection-xapi",
+    "degree": 4,
+    "label": "GET /api/selection-xapi/feature-flags",
+    "id": "tb-selection-xapi::endpoint:tb-selection-xapi:GET:/api/selection-xapi/feature-flags",
+    "type": "endpoint"
+   },
+   {
+    "loc": "L73",
+    "file": "/tb-selection-xapi/src/main/java/com/tailoredbrands/selection/controller/FeatureFlagController.java",
+    "repo": "tb-selection-xapi",
+    "degree": 4,
+    "label": "GET /api/selection-xapi/feature-flags/:brandId",
+    "id": "tb-selection-xapi::endpoint:tb-selection-xapi:GET:/api/selection-xapi/feature-flags/:brandId",
+    "type": "endpoint"
+   },
+   {
+    "loc": "L104",
+    "file": "/tb-selection-xapi/src/main/java/com/tailoredbrands/selection/controller/FeatureFlagController.java",
+    "repo": "tb-selection-xapi",
+    "degree": 4,
+    "label": "GET /api/selection-xapi/feature-flags/:brandId/:flagName",
+    "id": "tb-selection-xapi::endpoint:tb-selection-xapi:GET:/api/selection-xapi/feature-flags/:brandId/:flagName",
+    "type": "endpoint"
+   },
+   {
+    "loc": "L137",
+    "file": "/tb-selection-xapi/src/main/java/com/tailoredbrands/selection/controller/FeatureFlagController.java",
+    "repo": "tb-selection-xapi",
+    "degree": 4,
+    "label": "GET /api/selection-xapi/store-configs",
+    "id": "tb-selection-xapi::endpoint:tb-selection-xapi:GET:/api/selection-xapi/store-configs",
+    "type": "endpoint"
+   },
+   {
+    "loc": "L167",
+    "file": "/tb-selection-xapi/src/main/java/com/tailoredbrands/selection/controller/FeatureFlagController.java",
+    "repo": "tb-selection-xapi",
+    "degree": 4,
+    "label": "GET /api/selection-xapi/store-configs/:brandId",
+    "id": "tb-selection-xapi::endpoint:tb-selection-xapi:GET:/api/selection-xapi/store-configs/:brandId",
+    "type": "endpoint"
+   },
+   {
+    "loc": "L199",
+    "file": "/tb-selection-xapi/src/main/java/com/tailoredbrands/selection/controller/FeatureFlagController.java",
+    "repo": "tb-selection-xapi",
+    "degree": 4,
+    "label": "GET /api/selection-xapi/store-configs/:brandId/:propertyName",
+    "id": "tb-selection-xapi::endpoint:tb-selection-xapi:GET:/api/selection-xapi/store-configs/:brandId/:propertyName",
+    "type": "endpoint"
+   },
+   {
+    "loc": "L234",
+    "file": "/tb-selection-xapi/src/main/java/com/tailoredbrands/selection/controller/FeatureFlagController.java",
+    "repo": "tb-selection-xapi",
+    "degree": 4,
+    "label": "GET /api/selection-xapi/feature-configs/:brandId",
+    "id": "tb-selection-xapi::endpoint:tb-selection-xapi:GET:/api/selection-xapi/feature-configs/:brandId",
+    "type": "endpoint"
+   },
+   {
+    "loc": "L81",
+    "file": "/tb-selection-xapi/src/main/java/com/tailoredbrands/selection/controller/InventoryController.java",
+    "repo": "tb-selection-xapi",
+    "degree": 4,
+    "label": "GET /api/selection-xapi/inventory/products/:productKey",
+    "id": "tb-selection-xapi::endpoint:tb-selection-xapi:GET:/api/selection-xapi/inventory/products/:productKey",
+    "type": "endpoint"
+   },
+   {
+    "loc": "L52",
+    "file": "/tb-selection-xapi/src/main/java/com/tailoredbrands/selection/controller/LocalMemoryCacheController.java",
+    "repo": "tb-selection-xapi",
+    "degree": 4,
+    "label": "GET /api/selection-xapi",
+    "id": "tb-selection-xapi::endpoint:tb-selection-xapi:GET:/api/selection-xapi",
+    "type": "endpoint"
+   },
+   {
+    "loc": "L70",
+    "file": "/tb-selection-xapi/src/main/java/com/tailoredbrands/selection/controller/LocalMemoryCacheController.java",
+    "repo": "tb-selection-xapi",
+    "degree": 4,
+    "label": "GET /api/selection-xapi/:cacheName/:key",
+    "id": "tb-selection-xapi::endpoint:tb-selection-xapi:GET:/api/selection-xapi/:cacheName/:key",
+    "type": "endpoint"
+   },
+   {
+    "loc": "L98",
+    "file": "/tb-selection-xapi/src/main/java/com/tailoredbrands/selection/controller/LocalMemoryCacheController.java",
+    "repo": "tb-selection-xapi",
+    "degree": 4,
+    "label": "DELETE /api/selection-xapi",
+    "id": "tb-selection-xapi::endpoint:tb-selection-xapi:DELETE:/api/selection-xapi",
+    "type": "endpoint"
+   },
+   {
+    "loc": "L115",
+    "file": "/tb-selection-xapi/src/main/java/com/tailoredbrands/selection/controller/LocalMemoryCacheController.java",
+    "repo": "tb-selection-xapi",
+    "degree": 4,
+    "label": "DELETE /api/selection-xapi/:cacheName/:key",
+    "id": "tb-selection-xapi::endpoint:tb-selection-xapi:DELETE:/api/selection-xapi/:cacheName/:key",
+    "type": "endpoint"
+   },
+   {
+    "loc": "L58",
+    "file": "/tb-selection-xapi/src/main/java/com/tailoredbrands/selection/controller/ProductSelectionController.java",
+    "repo": "tb-selection-xapi",
+    "degree": 4,
+    "label": "GET /api/selection-xapi/products/color-variants",
+    "id": "tb-selection-xapi::endpoint:tb-selection-xapi:GET:/api/selection-xapi/products/color-variants",
+    "type": "endpoint"
+   },
+   {
+    "loc": "L88",
+    "file": "/tb-selection-xapi/src/main/java/com/tailoredbrands/selection/controller/ProductSelectionController.java",
+    "repo": "tb-selection-xapi",
+    "degree": 4,
+    "label": "GET /api/selection-xapi/products/key/:key",
+    "id": "tb-selection-xapi::endpoint:tb-selection-xapi:GET:/api/selection-xapi/products/key/:key",
+    "type": "endpoint"
+   },
+   {
+    "loc": "L124",
+    "file": "/tb-selection-xapi/src/main/java/com/tailoredbrands/selection/controller/ProductSelectionController.java",
+    "repo": "tb-selection-xapi",
+    "degree": 4,
+    "label": "GET /api/selection-xapi/products/quick-view/key/:key",
+    "id": "tb-selection-xapi::endpoint:tb-selection-xapi:GET:/api/selection-xapi/products/quick-view/key/:key",
+    "type": "endpoint"
+   }
+  ],
+  "edges": [
+   {
+    "id": "n0",
+    "source": "tb-discovery-mfe::route",
+    "target": "tb-discovery-mfe::endpoint:tb-discovery-mfe:GET:/api-replatform/v1/selection-xapi/:path*",
+    "relation": "EXPOSES_ENDPOINT",
+    "confidence": "EXTRACTED"
+   },
+   {
+    "id": "n1",
+    "source": "tb-discovery-mfe::endpoint:tb-discovery-mfe:GET:/api-replatform/v1/selection-xapi/:path*",
+    "target": "tb-selection-xapi::endpoint:tb-selection-xapi:POST:/api/selection-xapi/inventory/skus",
+    "relation": "PROXIES_TO",
+    "confidence": "INFERRED"
+   },
+   {
+    "id": "n2",
+    "source": "tb-discovery-mfe::endpoint:tb-discovery-mfe:GET:/api-replatform/v1/selection-xapi/:path*",
+    "target": "tb-selection-xapi::endpoint:tb-selection-xapi:GET:/api/selection-xapi/contentstack/entriesbyurl",
+    "relation": "PROXIES_TO",
+    "confidence": "INFERRED"
+   },
+   {
+    "id": "n3",
+    "source": "tb-discovery-mfe::endpoint:tb-discovery-mfe:GET:/api-replatform/v1/selection-xapi/:path*",
+    "target": "tb-selection-xapi::endpoint:tb-selection-xapi:GET:/api/selection-xapi/contentstack/entries",
+    "relation": "PROXIES_TO",
+    "confidence": "INFERRED"
+   },
+   {
+    "id": "n4",
+    "source": "tb-discovery-mfe::endpoint:tb-discovery-mfe:GET:/api-replatform/v1/selection-xapi/:path*",
+    "target": "tb-selection-xapi::endpoint:tb-selection-xapi:GET:/api/selection-xapi/feature-flags",
+    "relation": "PROXIES_TO",
+    "confidence": "INFERRED"
+   },
+   {
+    "id": "n5",
+    "source": "tb-discovery-mfe::endpoint:tb-discovery-mfe:GET:/api-replatform/v1/selection-xapi/:path*",
+    "target": "tb-selection-xapi::endpoint:tb-selection-xapi:GET:/api/selection-xapi/feature-flags/:brandId",
+    "relation": "PROXIES_TO",
+    "confidence": "INFERRED"
+   },
+   {
+    "id": "n6",
+    "source": "tb-discovery-mfe::endpoint:tb-discovery-mfe:GET:/api-replatform/v1/selection-xapi/:path*",
+    "target": "tb-selection-xapi::endpoint:tb-selection-xapi:GET:/api/selection-xapi/feature-flags/:brandId/:flagName",
+    "relation": "PROXIES_TO",
+    "confidence": "INFERRED"
+   },
+   {
+    "id": "n7",
+    "source": "tb-discovery-mfe::endpoint:tb-discovery-mfe:GET:/api-replatform/v1/selection-xapi/:path*",
+    "target": "tb-selection-xapi::endpoint:tb-selection-xapi:GET:/api/selection-xapi/store-configs",
+    "relation": "PROXIES_TO",
+    "confidence": "INFERRED"
+   },
+   {
+    "id": "n8",
+    "source": "tb-discovery-mfe::endpoint:tb-discovery-mfe:GET:/api-replatform/v1/selection-xapi/:path*",
+    "target": "tb-selection-xapi::endpoint:tb-selection-xapi:GET:/api/selection-xapi/store-configs/:brandId",
+    "relation": "PROXIES_TO",
+    "confidence": "INFERRED"
+   },
+   {
+    "id": "n9",
+    "source": "tb-discovery-mfe::endpoint:tb-discovery-mfe:GET:/api-replatform/v1/selection-xapi/:path*",
+    "target": "tb-selection-xapi::endpoint:tb-selection-xapi:GET:/api/selection-xapi/store-configs/:brandId/:propertyName",
+    "relation": "PROXIES_TO",
+    "confidence": "INFERRED"
+   },
+   {
+    "id": "n10",
+    "source": "tb-discovery-mfe::endpoint:tb-discovery-mfe:GET:/api-replatform/v1/selection-xapi/:path*",
+    "target": "tb-selection-xapi::endpoint:tb-selection-xapi:GET:/api/selection-xapi/feature-configs/:brandId",
+    "relation": "PROXIES_TO",
+    "confidence": "INFERRED"
+   },
+   {
+    "id": "n11",
+    "source": "tb-discovery-mfe::endpoint:tb-discovery-mfe:GET:/api-replatform/v1/selection-xapi/:path*",
+    "target": "tb-selection-xapi::endpoint:tb-selection-xapi:GET:/api/selection-xapi/inventory/products/:productKey",
+    "relation": "PROXIES_TO",
+    "confidence": "INFERRED"
+   },
+   {
+    "id": "n12",
+    "source": "tb-discovery-mfe::endpoint:tb-discovery-mfe:GET:/api-replatform/v1/selection-xapi/:path*",
+    "target": "tb-selection-xapi::endpoint:tb-selection-xapi:GET:/api/selection-xapi",
+    "relation": "PROXIES_TO",
+    "confidence": "INFERRED"
+   },
+   {
+    "id": "n13",
+    "source": "tb-discovery-mfe::endpoint:tb-discovery-mfe:GET:/api-replatform/v1/selection-xapi/:path*",
+    "target": "tb-selection-xapi::endpoint:tb-selection-xapi:GET:/api/selection-xapi/:cacheName/:key",
+    "relation": "PROXIES_TO",
+    "confidence": "INFERRED"
+   },
+   {
+    "id": "n14",
+    "source": "tb-discovery-mfe::endpoint:tb-discovery-mfe:GET:/api-replatform/v1/selection-xapi/:path*",
+    "target": "tb-selection-xapi::endpoint:tb-selection-xapi:DELETE:/api/selection-xapi",
+    "relation": "PROXIES_TO",
+    "confidence": "INFERRED"
+   },
+   {
+    "id": "n15",
+    "source": "tb-discovery-mfe::endpoint:tb-discovery-mfe:GET:/api-replatform/v1/selection-xapi/:path*",
+    "target": "tb-selection-xapi::endpoint:tb-selection-xapi:DELETE:/api/selection-xapi/:cacheName/:key",
+    "relation": "PROXIES_TO",
+    "confidence": "INFERRED"
+   },
+   {
+    "id": "n16",
+    "source": "tb-discovery-mfe::endpoint:tb-discovery-mfe:GET:/api-replatform/v1/selection-xapi/:path*",
+    "target": "tb-selection-xapi::endpoint:tb-selection-xapi:GET:/api/selection-xapi/products/color-variants",
+    "relation": "PROXIES_TO",
+    "confidence": "INFERRED"
+   },
+   {
+    "id": "n17",
+    "source": "tb-discovery-mfe::endpoint:tb-discovery-mfe:GET:/api-replatform/v1/selection-xapi/:path*",
+    "target": "tb-selection-xapi::endpoint:tb-selection-xapi:GET:/api/selection-xapi/products/key/:key",
+    "relation": "PROXIES_TO",
+    "confidence": "INFERRED"
+   },
+   {
+    "id": "n18",
+    "source": "tb-discovery-mfe::endpoint:tb-discovery-mfe:GET:/api-replatform/v1/selection-xapi/:path*",
+    "target": "tb-selection-xapi::endpoint:tb-selection-xapi:GET:/api/selection-xapi/products/quick-view/key/:key",
+    "relation": "PROXIES_TO",
+    "confidence": "INFERRED"
+   }
+  ],
+  "total": 19
+ }
+}

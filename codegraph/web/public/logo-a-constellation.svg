@@ -1,0 +1,23 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="72" height="72" viewBox="0 0 72 72" fill="none">
+  <defs>
+    <linearGradient id="bg" x1="8" y1="4" x2="68" y2="70" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#8B5CF6"/>
+      <stop offset="1" stop-color="#22D3EE"/>
+    </linearGradient>
+  </defs>
+  <rect width="72" height="72" rx="18" fill="url(#bg)"/>
+  <!-- C arc of edges -->
+  <path d="M50 18.5 C36 12 18 20 16.5 36 C18 52 36 60 50 53.5" stroke="#F8FAFC" stroke-width="3.2" stroke-linecap="round" fill="none"/>
+  <!-- G inner hook -->
+  <path d="M50 36 H38" stroke="#F8FAFC" stroke-width="3.2" stroke-linecap="round"/>
+  <path d="M38 36 C38 46 44 52.5 50 53.5" stroke="#F8FAFC" stroke-width="3.2" stroke-linecap="round" fill="none"/>
+  <circle cx="50" cy="18.5" r="3.4" fill="#0B1220"/>
+  <circle cx="50" cy="18.5" r="2.1" fill="#F8FAFC"/>
+  <circle cx="28" cy="16.8" r="2.1" fill="#F8FAFC"/>
+  <circle cx="16.5" cy="36" r="3.6" fill="#0B1220"/>
+  <circle cx="16.5" cy="36" r="2.2" fill="#F8FAFC"/>
+  <circle cx="28" cy="55.2" r="2.1" fill="#F8FAFC"/>
+  <circle cx="50" cy="53.5" r="3.4" fill="#0B1220"/>
+  <circle cx="50" cy="53.5" r="2.1" fill="#22D3EE"/>
+  <circle cx="38" cy="36" r="2.4" fill="#F8FAFC"/>
+</svg>

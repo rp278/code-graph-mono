@@ -1,0 +1,68 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <title>Web shapes</title>
+    <style>
+      html, body { margin: 0; background: #0a0e14; color: #e2e8f0; font-family: ui-sans-serif, system-ui, sans-serif; }
+      body { padding: 40px 48px 64px; }
+      h1 { font-size: 20px; margin: 0 0 8px; }
+      p { color: #8b94a3; margin: 0 0 28px; font-size: 14px; }
+      .grid { display: grid; grid-template-columns: repeat(3, minmax(220px, 1fr)); gap: 18px; max-width: 980px; }
+      .card { background: #11161f; border: 1px solid #1e2633; border-radius: 16px; padding: 22px; }
+      .preview { display: flex; align-items: center; gap: 14px; margin-bottom: 10px; }
+      img { width: 96px; height: 96px; border-radius: 50%; }
+      .kicker { font-family: ui-monospace, Menlo, monospace; font-size: 11px; color: #22d3ee; letter-spacing: 0.08em; }
+      h2 { margin: 2px 0 0; font-size: 15px; }
+      .blurb { margin: 0; font-size: 13px; color: #8b94a3; line-height: 1.4; }
+    </style>
+  </head>
+  <body>
+    <h1>Web shapes</h1>
+    <p>Same airy triangular mesh. Different overall shapes. 1 is live. Pick a number.</p>
+    <div class="grid">
+      <article class="card">
+        <div class="preview">
+          <img src="/logo-w1-cwrap.svg" alt="1" />
+          <div><div class="kicker">1</div><h2>C-wrap</h2></div>
+        </div>
+        <p class="blurb">Current. Open web hugging CG.</p>
+      </article>
+      <article class="card">
+        <div class="preview">
+          <img src="/logo-w2-halo.svg" alt="2" />
+          <div><div class="kicker">2</div><h2>Halo</h2></div>
+        </div>
+        <p class="blurb">Almost a ring of triangles around CG.</p>
+      </article>
+      <article class="card">
+        <div class="preview">
+          <img src="/logo-w3-neuron.svg" alt="3" />
+          <div><div class="kicker">3</div><h2>Neuron</h2></div>
+        </div>
+        <p class="blurb">Star on the left, sparse arms onto G.</p>
+      </article>
+      <article class="card">
+        <div class="preview">
+          <img src="/logo-w4-crescent.svg" alt="4" />
+          <div><div class="kicker">4</div><h2>Crescent</h2></div>
+        </div>
+        <p class="blurb">Heavy on the left and top, light below.</p>
+      </article>
+      <article class="card">
+        <div class="preview">
+          <img src="/logo-w5-fans.svg" alt="5" />
+          <div><div class="kicker">5</div><h2>Twin fans</h2></div>
+        </div>
+        <p class="blurb">Two triangular fans from a hub.</p>
+      </article>
+      <article class="card">
+        <div class="preview">
+          <img src="/logo-w6-comet.svg" alt="6" />
+          <div><div class="kicker">6</div><h2>Comet</h2></div>
+        </div>
+        <p class="blurb">Dense left, tapering trail onto G.</p>
+      </article>
+    </div>
+  </body>
+</html>

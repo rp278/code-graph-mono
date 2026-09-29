@@ -1,0 +1,27 @@
+{
+  "name": "codegraph-video",
+  "private": true,
+  "version": "0.0.0",
+  "type": "module",
+  "scripts": {
+    "snapshot": "node scripts/snapshot.mjs",
+    "capture": "node scripts/capture-graph.mjs && node scripts/capture-ask.mjs",
+    "audio": "node scripts/make-audio.mjs",
+    "studio": "remotion studio src/index.ts",
+    "render": "remotion render src/index.ts CodeGraphOverview out/codegraph-overview.mp4",
+    "render:tree": "remotion render src/index.ts TreeConcept out/tree-concept.mp4"
+  },
+  "dependencies": {
+    "@remotion/cli": "^4.0.529",
+    "dagre": "^0.8.5",
+    "react": "^19.3.0",
+    "react-dom": "^19.3.0",
+    "remotion": "^4.0.529"
+  },
+  "devDependencies": {
+    "@types/dagre": "^0.7.54",
+    "@types/react": "^19.3.0",
+    "@types/react-dom": "^19.3.0",
+    "typescript": "^7.0.2"
+  }
+}

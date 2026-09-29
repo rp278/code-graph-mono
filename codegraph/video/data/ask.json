@@ -1,0 +1,151 @@
+{
+  "question": "Where is GlobalScriptsSDK used in tb-discovery-mfe?",
+  "repo": "tb-discovery-mfe",
+  "statuses": [
+    {
+      "t": 1.005,
+      "text": "RUNNING"
+    },
+    {
+      "t": 2.01,
+      "text": "GlobalScriptsSDK` imports and usages, then confirm in the source files."
+    },
+    {
+      "t": 3.012,
+      "text": "Finished `glob`"
+    },
+    {
+      "t": 5.016,
+      "text": "Finished `grep` — /Users/rp278/Desktop/bot/code-graph-wsp/tb-discovery-mfe"
+    },
+    {
+      "t": 10.035,
+      "text": "Finished `read` — /Users/rp278/Desktop/bot/code-graph-wsp/tb-discovery-mfe/app/[locale]/layout.tsx"
+    },
+    {
+      "t": 11.038,
+      "text": ".GLOBAL_SCRIPTS_DEBUG,           }}         /> ```  That layout wraps all"
+    },
+    {
+      "t": 12.041,
+      "text": "contracts — they do not mount the component."
+    }
+  ],
+  "answer": "**Production usage:** only in the locale root layout.\n\n### Mounted in `app/[locale]/layout.tsx`\n\nImported at line 41 and rendered in `<head>` (after `TBAnalyticsStubScript`) at lines 219–227:\n\n```219:227:app/[locale]/layout.tsx\n        <GlobalScriptsSDK\n          config={{\n            brand,\n            locale,\n            page,\n            runtimeConfig,\n            debug: env.GLOBAL_SCRIPTS_DEBUG,\n          }}\n        />\n```\n\nThat layout wraps all `[locale]` routes, so `GlobalScriptsSDK` runs app-wide for those pages.\n\n### Tests\n\n`app/components/GlobalScripts/__tests__/GlobalScriptsSDK.test.tsx` imports and renders it directly (line 3, and many `render(<GlobalScriptsSDK …>)` calls).\n\n### Mentions only (not imported/rendered)\n\nComments in `AnalyticsLifecycleTracker.tsx`, its test, `tracking.ts`, `searchGTMevents.ts`, `usePdpCapiViewContent.ts`, and `lib/config/publicConfig.ts` refer to it for analytics ownership / contracts — they do not mount the component.",
+  "context": [
+    {
+      "id": "tb-discovery-mfe::kairos_fabric_hooks_usedevice",
+      "label": "useDevice()",
+      "type": "code",
+      "file": "/Users/rp278/Desktop/bot/code-graph-wsp/tb-discovery-mfe/__mocks__/kairos-fabric-hooks.tsx",
+      "repo": "tb-discovery-mfe",
+      "neighbors": [
+        "kairos-fabric-hooks.tsx [code]"
+      ]
+    },
+    {
+      "id": "tb-discovery-mfe::searchfacetsdrawer_scrollfocusedtextinputtotop",
+      "label": "scrollFocusedTextInputToTop()",
+      "type": "code",
+      "file": "/Users/rp278/Desktop/bot/code-graph-wsp/tb-discovery-mfe/app/[locale]/search/components/SearchFacetsDrawer/SearchFacetsDrawer.tsx",
+      "repo": "tb-discovery-mfe",
+      "neighbors": [
+        "getDrawerScroller() [code]",
+        "SearchFacetsDrawer.tsx [code]"
+      ]
+    },
+    {
+      "id": "tb-discovery-mfe::searchfacetsdrawer_scrollfocusedfacetrowintoview",
+      "label": "scrollFocusedFacetRowIntoView()",
+      "type": "code",
+      "file": "/Users/rp278/Desktop/bot/code-graph-wsp/tb-discovery-mfe/app/[locale]/search/components/SearchFacetsDrawer/SearchFacetsDrawer.tsx",
+      "repo": "tb-discovery-mfe",
+      "neighbors": [
+        "SearchFacetsDrawer.tsx [code]"
+      ]
+    },
+    {
+      "id": "tb-discovery-mfe::globalscriptssdk",
+      "label": "GlobalScriptsSDK.tsx",
+      "type": "code",
+      "file": "/Users/rp278/Desktop/bot/code-graph-wsp/tb-discovery-mfe/app/components/GlobalScripts/GlobalScriptsSDK.tsx",
+      "repo": "tb-discovery-mfe",
+      "neighbors": [
+        "POST /api-replatform/telemetry/xapi [endpoint]",
+        "GET /api-replatform/config [endpoint]",
+        "GlobalScriptsSDK.test.tsx [code]",
+        "GlobalScriptsSDK() [code]",
+        "primeCapiUserIdentifiersFromSession() [code]",
+        "primeSignedInPageViewAuthContextFromSession() [code]",
+        "resolveSignedInUserId() [code]",
+        "resolveRewardsIdForPageView() [code]",
+        "installTbCommonConsoleFilter() [code]",
+        "shouldSuppressTbCommonConsoleEntry() [code]",
+        "serverPageViewAfterLoad.ts [code]",
+        "clientActivate.ts [code]",
+        "useAnalyticsBus.ts [code]",
+        "clickIdCookies.ts [code]",
+        "tracking.ts [code]",
+        "fetchRuntimeConfig.ts [code]",
+        "cookies.ts [code]",
+        "trackDiscoveryPageView.ts [code]",
+        "gtmHelpers.ts [code]",
+        "pageViewClaim.ts [code]",
+        "capiEvent.ts [code]",
+        "clientTelemetry.ts [code]",
+        "layout.tsx [code]"
+      ]
+    },
+    {
+      "id": "tb-discovery-mfe::globalscriptssdk_globalscriptssdk",
+      "label": "GlobalScriptsSDK()",
+      "type": "code",
+      "file": "/Users/rp278/Desktop/bot/code-graph-wsp/tb-discovery-mfe/app/components/GlobalScripts/GlobalScriptsSDK.tsx",
+      "repo": "tb-discovery-mfe",
+      "neighbors": [
+        "GlobalScriptsSDK.tsx [code]"
+      ]
+    },
+    {
+      "id": "tb-discovery-mfe::globalscriptssdk_test",
+      "label": "GlobalScriptsSDK.test.tsx",
+      "type": "code",
+      "file": "/Users/rp278/Desktop/bot/code-graph-wsp/tb-discovery-mfe/app/components/GlobalScripts/__tests__/GlobalScriptsSDK.test.tsx",
+      "repo": "tb-discovery-mfe",
+      "neighbors": [
+        "serverPageViewAfterLoad.ts [code]",
+        "clientActivate.ts [code]",
+        "useAnalyticsBus.ts [code]",
+        "pageViewClaim.ts [code]",
+        "gtmHelpers.ts [code]",
+        "tracking.ts [code]",
+        "fetchRuntimeConfig.ts [code]",
+        "GlobalScriptsSDK.tsx [code]"
+      ]
+    },
+    {
+      "id": "tb-discovery-mfe::usedebounce",
+      "label": "useDebounce.ts",
+      "type": "code",
+      "file": "/Users/rp278/Desktop/bot/code-graph-wsp/tb-discovery-mfe/hooks/useDebounce.ts",
+      "repo": "tb-discovery-mfe",
+      "neighbors": [
+        "useDebounce() [code]",
+        "ShippingCard.tsx [code]"
+      ]
+    },
+    {
+      "id": "tb-discovery-mfe::usedebounce_usedebounce",
+      "label": "useDebounce()",
+      "type": "code",
+      "file": "/Users/rp278/Desktop/bot/code-graph-wsp/tb-discovery-mfe/hooks/useDebounce.ts",
+      "repo": "tb-discovery-mfe",
+      "neighbors": [
+        "useDebounce.ts [code]"
+      ]
+    }
+  ],
+  "status": "done",
+  "error": null,
+  "seconds": 13.043
+}

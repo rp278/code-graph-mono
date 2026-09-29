@@ -6,23 +6,24 @@
   "notes": [
     "Started via dashboard (Cursor SDK, local runtime) at 2026-09-29T20:49:40.481840+00:00.",
     "Gate 1 presented: located ECS_40001 in ecom-content-stack; candidate cause is application-local.yaml ContentStack base-url defaults ending in /v3/test.",
-    "Gate 1 approved for ecom-content-stack; Stage 2 rootcause.md presented."
+    "Gate 1 approved for ecom-content-stack; Stage 2 rootcause.md presented.",
+    "Gate 2 approved; Stage 3 repro: JUnit added; Maven blocked by private parent POM 401; standalone assertions match hypothesis (bug FAIL, preservation PASS). Gate 3 presented."
   ],
   "stories": {
     "ecom-content-stack": {
-      "stage": "2-rootcause",
+      "stage": "3-repro",
       "gates": {
         "1_analysis": "approved",
-        "2_rootcause": null,
+        "2_rootcause": "approved",
         "3_repro": null,
         "4_fix": null
       },
-      "branch": null,
+      "branch": "pipeline/bug-error-stack-trace-serviceerrors-code/ecom-content-stack",
       "pr_url": null,
       "pending_gate": {
-        "gate": "2_rootcause",
-        "presented_at": "2026-09-29T20:52:15.666293+00:00",
-        "summary": "Root cause for ecom-content-stack: local-profile defaults for content-stack-service and content-stack-entry-service base-url incorrectly use \u2026/v3/test (Demo commit), so unset CONTENTSTACK_* env vars send clients to invalid ContentStack paths; 4xx is then correctly mapped to ECS_40001 by defaultBadRequestError(). Bug condition C = local profile + those env defaults applying. Proposed fix = restore \u2026/v3 on those two yaml defaults only. Scope fence unchanged from Gate 1. Awaiting approval of rootcause.md before any tests or source edits."
+        "gate": "3_repro",
+        "presented_at": "2026-09-29T20:54:40.763119+00:00",
+        "summary": "Reproduce for ecom-content-stack: added ContentStackLocalBaseUrlDefaultsTest encoding C/P (local CDN/Management defaults must be \u2026/v3). Maven cannot run (GCP artifact registry 401 on tb-platform-parent). Standalone run of the same predicates on the unfixed tree: 4 bug-condition FAILs showing \u2026/v3/test, 7 preservation PASSes (preview, test yaml, ECS_40001 contract). No src/main changes. Awaiting Gate 3 approval of repro.md before applying the yaml fix."
       }
     }
   }

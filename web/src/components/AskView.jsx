@@ -3,11 +3,41 @@ import { api } from '../api';
 import { colorForType } from '../graphUtils';
 import { renderRich } from './richText';
 
+// Cross-repo questions shown when "All repos" is selected.
 const SUGGESTIONS = [
-  'What calls the product list endpoint?',
-  'How does the storefront load and filter products?',
-  'What would break if I change the products table?',
+  'How does tb-discovery-mfe fetch data from tb-discovery-xapi?',
+  'Which repos use kairos-fabric components?',
+  'How is Redis caching used across the xapi services?',
+  'Where is GlobalScriptsSDK used in tb-discovery-mfe?',
 ];
+
+// Repo-specific questions shown when a single repo chip is selected.
+const REPO_SUGGESTIONS = {
+  'tb-common-mfe': [
+    'How does tb-global-navigation render the header and footer on the server?',
+    'What reusable packages does tb-common-mfe publish?',
+  ],
+  'tb-discovery-mfe': [
+    'How does the catalog app handle internationalization?',
+    'Which xapi endpoints does this app call?',
+  ],
+  'tb-discovery-xapi': [
+    'How does this service use Constructor.io for search and browse?',
+    'How is Commercetools product data fetched and cached in Redis?',
+  ],
+  'tb-marketing-xapi': [
+    'How does the store-locator passthrough work?',
+    'How does this service fetch and cache marketing content?',
+  ],
+  'tb-selection-xapi': [
+    'How are feature flag changes propagated via Redis Pub/Sub?',
+    'Which downstream APIs does this service aggregate?',
+  ],
+  'kairos-fabric': [
+    'What components does the design system export?',
+    'How are themes built and applied?',
+  ],
+};
 
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 
@@ -129,7 +159,7 @@ export default function AskView({ repos = [], initialRepoId = 'all', onJumpToNod
               The assistant can read and search files but can never change them.
             </p>
             <div className="ask-suggestions">
-              {SUGGESTIONS.map((s) => (
+              {(REPO_SUGGESTIONS[repoId] || SUGGESTIONS).map((s) => (
                 <button key={s} type="button" className="repo-chip" onClick={() => ask(s)}>
                   {s}
                 </button>

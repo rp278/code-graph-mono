@@ -30,6 +30,24 @@ export const api = {
   getRepos: () => request('/api/repos'),
   getGraph: (repoId) =>
     request(!repoId || repoId === 'all' ? '/api/graph' : `/api/graph?repo_id=${encodeURIComponent(repoId)}`),
+  getTree: (repoId) =>
+    request(
+      !repoId || repoId === 'all'
+        ? '/api/graph/tree'
+        : `/api/graph/tree?repo_id=${encodeURIComponent(repoId)}`
+    ),
+  // Explorer: find nodes by label (empty query = the repo's entry points).
+  searchGraph: (q, repoId, type, limit = 40) => {
+    const p = new URLSearchParams({ q: q || '', limit: String(limit) });
+    if (repoId && repoId !== 'all') p.set('repo_id', repoId);
+    if (type) p.set('type', type);
+    return request(`/api/graph/search?${p}`);
+  },
+  // Explorer: one node plus everything directly connected to it.
+  getNeighborhood: (nodeId, limit = 150) =>
+    request(`/api/graph/neighborhood?${new URLSearchParams({ node_id: nodeId, limit: String(limit) })}`),
+  // Explorer "All repos": connections between repositories, by relation.
+  getRepoLinks: () => request('/api/graph/repo-links'),
   getStats: () => request('/api/graph/stats'),
   rebuild: (repoId) => request('/api/graph/rebuild', { method: 'POST', body: { repo_id: repoId } }),
   // Ask AI (Cursor agent). ask() returns immediately with a conversation id;

@@ -1,11 +1,9 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { applyNodeChanges, applyEdgeChanges } from '@xyflow/react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { api } from './api';
-import { layoutNodes, toFlowNode, toFlowEdge } from './graphUtils';
 import Header from './components/Header';
-import Sidebar from './components/Sidebar';
-import GraphView from './components/GraphView';
+import Explorer from './components/Explorer';
 import AskView from './components/AskView';
+import TreeView from './components/TreeView';
 import RequirementsView from './components/RequirementsView';
 import Landing from './components/Landing';
 import { isFeatureDevelopmentEnabled } from './flags';
@@ -17,7 +15,7 @@ export default function App() {
   const [reposError, setReposError] = useState(null);
   const [selectedRepoId, setSelectedRepoId] = useState('');
 
-  const [stats, setStats] = useState({ nodes: 0, edges: 0 });
+  const [stats, setStats] = useState({ nodes: 0, edges: 0, byType: [] });
   const [statsLoading, setStatsLoading] = useState(true);
 
   const [screen, setScreen] = useState(() => {
@@ -27,22 +25,19 @@ export default function App() {
     return saved;
   });
   const [tab, setTab] = useState('graph');
+  // 'graph' = repo + node explorer (default); 'tree' = collapsible folder/file/symbol tree.
+  const [graphView, setGraphView] = useState(() => sessionStorage.getItem('codegraph.graphView') || 'graph');
+  const chooseGraphView = useCallback((v) => {
+    setGraphView(v);
+    sessionStorage.setItem('codegraph.graphView', v);
+  }, []);
 
-  const [apiNodes, setApiNodes] = useState([]);
-  const [apiEdges, setApiEdges] = useState([]);
-  const [graphLoading, setGraphLoading] = useState(false);
-  const [graphError, setGraphError] = useState(null);
-
-  // Dagre-positioned flow nodes/edges (no selection styling — that is derived).
-  const [baseNodes, setBaseNodes] = useState([]);
-  const [baseEdges, setBaseEdges] = useState([]);
-
-  const [selectedId, setSelectedId] = useState(null);
-  const [highlightId, setHighlightId] = useState(null);
-  const [search, setSearch] = useState('');
+  // Explorer navigation: the nodes visited so far, last = the one on screen.
+  const [trail, setTrail] = useState([]);
+  // Bumped after a rebuild so the explorer / tree refetch.
+  const [graphVersion, setGraphVersion] = useState(0);
 
   const [rebuild, setRebuild] = useState({ state: 'idle', message: '' });
-  const rfRef = useRef(null);
 
   const goHome = useCallback(() => {
     setScreen('home');
@@ -75,33 +70,11 @@ export default function App() {
     setStatsLoading(true);
     try {
       const s = await api.getStats();
-      setStats({ nodes: s.nodes ?? 0, edges: s.edges ?? 0 });
+      setStats({ nodes: s.nodes ?? 0, edges: s.edges ?? 0, byType: s.by_type || [] });
     } catch {
       // keep previous stats on transient failure
     } finally {
       setStatsLoading(false);
-    }
-  }, []);
-
-  const loadGraph = useCallback(async (repoId) => {
-    if (!repoId) {
-      setApiNodes([]);
-      setApiEdges([]);
-      return;
-    }
-    setGraphLoading(true);
-    setGraphError(null);
-    try {
-      const g = await api.getGraph(repoId);
-      setApiNodes(g.nodes || []);
-      setApiEdges(g.edges || []);
-      setSelectedId(null);
-      setHighlightId(null);
-      setSearch('');
-    } catch (e) {
-      setGraphError(e.message);
-    } finally {
-      setGraphLoading(false);
     }
   }, []);
 
@@ -110,93 +83,27 @@ export default function App() {
     loadStats();
   }, [loadRepos, loadStats]);
 
-  useEffect(() => {
-    loadGraph(selectedRepoId);
-  }, [selectedRepoId, loadGraph]);
+  // Node count per repo, for the repository list.
+  const repoCounts = useMemo(() => {
+    const m = {};
+    for (const row of stats.byType) m[row.repo] = (m[row.repo] || 0) + row.c;
+    return m;
+  }, [stats.byType]);
 
-  // ---- dagre layout whenever the underlying graph data changes ----
-  // Existing node positions are preserved so user drags survive re-renders.
-  useEffect(() => {
-    const positions = layoutNodes(apiNodes);
-    setBaseNodes((prev) => {
-      const prevPos = new Map(prev.map((n) => [n.id, n.position]));
-      return apiNodes.map((n) => toFlowNode(n, prevPos.get(n.id) || positions[n.id] || { x: 0, y: 0 }));
-    });
-    setBaseEdges((apiEdges || []).map(toFlowEdge));
-  }, [apiNodes, apiEdges]);
+  // Picking another repo starts over at that repo's overview.
+  const selectRepo = useCallback((id) => {
+    setSelectedRepoId(id);
+    setTrail([]);
+  }, []);
 
-  // ---- derived presentation state ----
-  const dimSet = useMemo(() => {
-    const q = search.trim().toLowerCase();
-    if (!q) return null;
-    return new Set(
-      apiNodes.filter((n) => (n.label || n.id || '').toLowerCase().includes(q)).map((n) => n.id)
-    );
-  }, [search, apiNodes]);
-
-  const nodes = useMemo(
-    () =>
-      baseNodes.map((n) => {
-        const color = n.data.color;
-        const active = n.id === selectedId || n.id === highlightId;
-        const dimmed = dimSet && !dimSet.has(n.id);
-        return {
-          ...n,
-          style: {
-            opacity: dimmed ? 0.22 : 1,
-            boxShadow: active
-              ? `0 0 0 2px ${color}, 0 0 28px ${color}55`
-              : '0 6px 18px rgba(0,0,0,0.5)',
-            transition: 'opacity 0.2s ease',
-          },
-        };
-      }),
-    [baseNodes, selectedId, highlightId, dimSet]
-  );
-
-  const onNodesChange = useCallback(
-    (changes) => setBaseNodes((ns) => applyNodeChanges(changes, ns)),
-    []
-  );
-  const onEdgesChange = useCallback(
-    (changes) => setBaseEdges((es) => applyEdgeChanges(changes, es)),
-    []
-  );
-
-  // ---- interactions ----
-  const focusNode = useCallback(
-    (id) => {
-      const n = baseNodes.find((x) => x.id === id);
-      if (n && rfRef.current) {
-        rfRef.current.setCenter(n.position.x + 105, n.position.y + 35, {
-          zoom: 1.15,
-          duration: 500,
-        });
-      }
-    },
-    [baseNodes]
-  );
-
-  const handleSelectNode = useCallback(
-    (id, focus = false) => {
-      setSelectedId(id);
-      setHighlightId(null);
-      if (focus) setTimeout(() => focusNode(id), 60);
-    },
-    [focusNode]
-  );
-
-  // Jump from a chat context chip back to the graph tab, highlighting the node.
+  // Jump from an Ask AI context chip to the node in the explorer.
   const jumpToNode = useCallback(
     (id) => {
-      setScreen('graph');
-      sessionStorage.setItem('codegraph.screen', 'graph');
-      setTab('graph');
-      setSelectedId(id);
-      setHighlightId(id);
-      setTimeout(() => focusNode(id), 80);
+      chooseScreen('graph');
+      chooseGraphView('graph');
+      setTrail([{ id, label: id }]);
     },
-    [focusNode]
+    [chooseScreen, chooseGraphView]
   );
 
   const handleRebuild = useCallback(async () => {
@@ -206,31 +113,51 @@ export default function App() {
       const r = await api.rebuild(selectedRepoId);
       const summary = r.status ? `Rebuild finished (${r.status}).` : 'Rebuild finished.';
       setRebuild({ state: 'done', message: summary });
-      await loadGraph(selectedRepoId);
       await loadStats();
+      setGraphVersion((v) => v + 1);
     } catch (e) {
       setRebuild({ state: 'error', message: `Rebuild failed: ${e.message}` });
     }
-  }, [selectedRepoId, loadGraph, loadStats]);
-
-  const isEmpty = !graphLoading && !graphError && apiNodes.length === 0;
+  }, [selectedRepoId, loadStats]);
 
   const graphActions = (
     <Header
       repos={repos}
       selectedRepoId={selectedRepoId}
-      onSelectRepo={setSelectedRepoId}
+      onSelectRepo={selectRepo}
       stats={stats}
       statsLoading={statsLoading}
       rebuild={rebuild}
       onRebuild={handleRebuild}
       extra={
-        <button
-          className={tab === 'chat' ? 'tab-chip active' : 'tab-chip'}
-          onClick={() => setTab((t) => (t === 'chat' ? 'graph' : 'chat'))}
-        >
-          {tab === 'chat' ? 'Back to graph' : 'Ask AI'}
-        </button>
+        <>
+          <button
+            className={tab !== 'chat' && graphView === 'graph' ? 'tab-chip active' : 'tab-chip'}
+            onClick={() => {
+              chooseGraphView('graph');
+              setTab('graph');
+            }}
+            title="Pick a repo and a node, then follow its connections"
+          >
+            Explore
+          </button>
+          <button
+            className={tab !== 'chat' && graphView === 'tree' ? 'tab-chip active' : 'tab-chip'}
+            onClick={() => {
+              chooseGraphView('tree');
+              setTab('graph');
+            }}
+            title="Folders, files and symbols as an expandable tree"
+          >
+            Tree
+          </button>
+          <button
+            className={tab === 'chat' ? 'tab-chip active' : 'tab-chip'}
+            onClick={() => setTab((t) => (t === 'chat' ? 'graph' : 'chat'))}
+          >
+            {tab === 'chat' ? 'Back to graph' : 'Ask AI'}
+          </button>
+        </>
       }
     />
   );
@@ -252,47 +179,25 @@ export default function App() {
           initialRepoId={selectedRepoId || 'all'}
           onJumpToNode={jumpToNode}
         />
-      ) : (
+      ) : graphView === 'tree' ? (
         <div className="graph-tab">
-          <Sidebar
-            apiNodes={apiNodes}
-            apiEdges={apiEdges}
-            selectedId={selectedId}
-            onSelectNode={handleSelectNode}
-            search={search}
-            onSearchChange={setSearch}
-          />
           <div className="canvas-col">
-            {graphLoading ? (
-              <div className="veil">
-                <span className="spinner large" />
-                <span>Loading graph…</span>
-              </div>
-            ) : graphError ? (
-              <div className="empty-state">
-                <h2>Couldn&apos;t load the graph</h2>
-                <p className="muted">{graphError}</p>
-                <button className="rebuild-btn" onClick={() => loadGraph(selectedRepoId)}>
-                  Retry
-                </button>
-              </div>
-            ) : (
-              <GraphView
-                nodes={nodes}
-                edges={baseEdges}
-                onNodesChange={onNodesChange}
-                onEdgesChange={onEdgesChange}
-                onNodeClick={handleSelectNode}
-                onInit={(inst) => {
-                  rfRef.current = inst;
-                }}
-                isEmpty={isEmpty}
-                onRebuild={handleRebuild}
-                rebuildWorking={rebuild.state === 'working'}
-              />
-            )}
+            <TreeView repoId={selectedRepoId || 'all'} reloadToken={`${stats.nodes}:${graphVersion}`} />
           </div>
         </div>
+      ) : (
+        <Explorer
+          repos={repos}
+          repoCounts={repoCounts}
+          totalNodes={stats.nodes}
+          selectedRepoId={selectedRepoId || 'all'}
+          onSelectRepo={selectRepo}
+          trail={trail}
+          setTrail={setTrail}
+          reloadToken={graphVersion}
+          onRebuild={handleRebuild}
+          rebuildWorking={rebuild.state === 'working'}
+        />
       )}
     </>
   );

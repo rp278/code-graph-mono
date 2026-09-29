@@ -239,6 +239,144 @@ def graph_stats() -> dict[str, Any]:
     return {"nodes": node_count, "edges": edge_count, "by_type": by_type}
 
 
+@app.get("/api/graph/tree", dependencies=[auth])
+def get_graph_tree(repo_id: Optional[str] = None) -> dict[str, Any]:
+    """Every node of the selected repo(s) plus only the parent->child edges
+    (CONTAINS: file -> class/function, METHOD: class -> method).
+
+    The dashboard builds a collapsible folder/file/symbol tree from this, so
+    unlike /api/graph it is not capped at a few hundred nodes.
+    """
+    repo = None if repo_id in (None, "", "all") else repo_id
+    with driver.session() as s:
+        nodes = s.run(
+            "MATCH (n:Node) WHERE $repo IS NULL OR n.repo = $repo "
+            "RETURN n.gid AS id, n.label AS label, n.type AS type, "
+            "n.source_file AS file, n.repo AS repo, "
+            "n.source_location AS loc",
+            repo=repo,
+        ).data()
+        edges = s.run(
+            "MATCH (a:Node)-[e:CONTAINS|METHOD]->(b:Node) "
+            "WHERE $repo IS NULL OR a.repo = $repo "
+            "RETURN a.gid AS source, b.gid AS target",
+            repo=repo,
+        ).data()
+    return {"nodes": nodes, "edges": edges}
+
+
+@app.get("/api/graph/repo-links", dependencies=[auth])
+def get_repo_links() -> dict[str, Any]:
+    """Connections BETWEEN repositories, aggregated by (source repo, target
+    repo, relation) with a count. Drives the "All repos" map in the dashboard."""
+    with driver.session() as s:
+        rows = s.run(
+            "MATCH (a:Node)-[e]->(b:Node) "
+            "WHERE a.repo IS NOT NULL AND b.repo IS NOT NULL AND a.repo <> b.repo "
+            "RETURN a.repo AS source, b.repo AS target, type(e) AS relation, "
+            "count(*) AS count "
+            "ORDER BY count DESC"
+        ).data()
+    return {"links": rows}
+
+
+_NODE_FIELDS = (
+    "{id: x.gid, label: x.label, type: x.type, file: x.source_file, "
+    "repo: x.repo, loc: x.source_location, degree: COUNT { (x)--() }}"
+)
+
+
+@app.get("/api/graph/search", dependencies=[auth])
+def search_graph(
+    q: str = "",
+    repo_id: Optional[str] = None,
+    type: Optional[str] = None,  # noqa: A002 -- query-string name
+    limit: int = 40,
+) -> dict[str, Any]:
+    """Find nodes by label (case-insensitive substring) for the explorer.
+
+    With an empty `q` this returns the repo's best entry points instead:
+    packages, pages and endpoints first, then the most connected nodes.
+    """
+    repo = None if repo_id in (None, "", "all") else repo_id
+    limit = max(1, min(limit, 200))
+    needle = q.strip().lower()
+    with driver.session() as s:
+        rows = s.run(
+            "MATCH (x:Node) "
+            "WHERE ($repo IS NULL OR x.repo = $repo) "
+            "AND ($type IS NULL OR x.type = $type) "
+            "AND ($q = '' OR toLower(x.label) CONTAINS $q "
+            "     OR toLower(coalesce(x.source_file, '')) CONTAINS $q) "
+            "WITH x, "
+            "  CASE x.type WHEN 'package' THEN 0 WHEN 'page' THEN 1 "
+            "    WHEN 'endpoint' THEN 2 ELSE 3 END AS prio, "
+            "  toLower(x.label) STARTS WITH $q AS starts, "
+            "  COUNT { (x)--() } AS degree "
+            "ORDER BY "
+            "  CASE WHEN $q = '' THEN prio ELSE 0 END, "
+            "  CASE WHEN $q <> '' AND starts THEN 0 ELSE 1 END, "
+            "  degree DESC "
+            "LIMIT $limit "
+            "RETURN x.gid AS id, x.label AS label, x.type AS type, "
+            "x.source_file AS file, x.repo AS repo, "
+            "x.source_location AS loc, degree",
+            repo=repo, type=type or None, q=needle, limit=limit,
+        ).data()
+        types = s.run(
+            "MATCH (x:Node) WHERE $repo IS NULL OR x.repo = $repo "
+            "RETURN x.type AS type, count(*) AS c ORDER BY c DESC",
+            repo=repo,
+        ).data()
+    return {"nodes": rows, "types": types}
+
+
+@app.get("/api/graph/neighborhood", dependencies=[auth])
+def graph_neighborhood(node_id: str, limit: int = 150) -> dict[str, Any]:
+    """One node plus its direct neighbors (both directions), across repos.
+
+    This is what the explorer draws: a node is only ever shown together with
+    the handful of nodes it is connected to, so the canvas stays readable no
+    matter how big the graph is. `total` is the real neighbor-edge count, so
+    the UI can say when the result was capped.
+    """
+    limit = max(1, min(limit, 500))
+    with driver.session() as s:
+        center = s.run(
+            "MATCH (x:Node {gid: $id}) RETURN " + _NODE_FIELDS + " AS n",
+            id=node_id,
+        ).single()
+        if center is None:
+            raise HTTPException(404, f"node not found: {node_id}")
+        total = s.run(
+            "MATCH (c:Node {gid: $id})-[e]-(m:Node) WHERE m <> c "
+            "RETURN count(e) AS c",
+            id=node_id,
+        ).single()["c"]
+        rows = s.run(
+            "MATCH (c:Node {gid: $id})-[e]-(x:Node) WHERE x <> c "
+            "RETURN startNode(e).gid AS source, endNode(e).gid AS target, "
+            "type(e) AS relation, e.confidence AS confidence, "
+            + _NODE_FIELDS + " AS n "
+            "ORDER BY COUNT { (x)--() } DESC LIMIT $limit",
+            id=node_id, limit=limit,
+        ).data()
+    nodes: dict[str, Any] = {}
+    edges: list[dict[str, Any]] = []
+    for i, r in enumerate(rows):
+        nodes[r["n"]["id"]] = r["n"]
+        edges.append({
+            "id": f"n{i}", "source": r["source"], "target": r["target"],
+            "relation": r["relation"], "confidence": r["confidence"],
+        })
+    return {
+        "center": center["n"],
+        "nodes": list(nodes.values()),
+        "edges": edges,
+        "total": total,
+    }
+
+
 @app.post("/api/query", dependencies=[auth])
 def run_query(q: QueryIn) -> dict[str, Any]:
     """Read-only Cypher passthrough for the dashboard / agent."""

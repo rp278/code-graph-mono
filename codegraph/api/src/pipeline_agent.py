@@ -7,8 +7,8 @@ Cursor chat — the skill runs headlessly via the Cursor SDK
 this API server runs on.
 
 Gate approval still works the same way conceptually — the skill still
-enforces every one of the 5 mandatory gates (see
-.cursor/rules/pipeline-gates.mdc) — it just can't call `AskQuestion`
+enforces every mandatory gate (5 for feature runs, 4 for bug runs; see
+.cursor/rules/pipeline-gates.mdc and pipeline-bugfix.mdc) — it just can't call `AskQuestion`
 headlessly. Instead (see that file's "Headless mode" section), the
 agent writes a `pending_gate` marker into the story's entry in
 `codegraph/pipeline/<slug>/state.json` and stops; approving/revising

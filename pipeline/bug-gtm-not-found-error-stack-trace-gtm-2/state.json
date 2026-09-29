@@ -5,8 +5,27 @@
   "agent_id": "agent-58fc86cd-9458-4de8-b055-af8908ea33e9",
   "notes": [
     "Started via dashboard (Cursor SDK, local runtime) at 2026-09-29T00:25:26.768042+00:00.",
-    "Rerun of 'bug-gtm-not-found-error-stack-trace-gtm'."
+    "Rerun of 'bug-gtm-not-found-error-stack-trace-gtm'.",
+    "Gate 1: graph + file search found no emitter of 'gtm not found' in shop-api/shop-web; provisional story shop-web for clarification only — no source fence."
   ],
-  "stories": {},
+  "stories": {
+    "shop-web": {
+      "stage": "1-analysis",
+      "gates": {
+        "1_analysis": null,
+        "2_rootcause": null,
+        "3_repro": null,
+        "4_fix": null,
+        "5_qa": null
+      },
+      "branch": null,
+      "pr_url": null,
+      "pending_gate": {
+        "gate": "1_analysis",
+        "presented_at": "2026-09-29T00:29:44Z",
+        "summary": "Analysis for shop-web (provisional): the intake is only the string \"gtm not found.\" with no stack frames or repo hints. Live codeGraph has zero nodes matching \"gtm\"; exhaustive search of shop-web and shop-api source, git history, and GitHub also finds no emitter of that message (and no GTM/analytics integration at all). Closest graph hit is the unrelated NotFound page (\"Page not found\"). Candidate location is none — Gate 1 asks whether to supply a real stack trace / clarify what \"gtm\" means, treat this as a dashboard rerun smoke test with nothing to fix, or refile as a feature request if Google Tag Manager is desired. No source changes proposed."
+      }
+    }
+  },
   "rerun_of": "bug-gtm-not-found-error-stack-trace-gtm"
 }

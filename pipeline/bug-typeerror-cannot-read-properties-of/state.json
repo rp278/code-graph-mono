@@ -7,23 +7,24 @@
     "Started via dashboard (Cursor SDK, local runtime) at 2026-09-29T05:59:52.760851+00:00.",
     "Stage 1: located in tb-discovery-mfe helpers/formatters.ts slugify via graph + stack match.",
     "Gate 1_analysis for tb-discovery-mfe approved; Stage 2 rootcause presented.",
-    "Gate 2_rootcause for tb-discovery-mfe approved; Stage 3 repro presented (2 failing bug-condition tests, 15 passing, no source changes)."
+    "Gate 2_rootcause for tb-discovery-mfe approved; Stage 3 repro presented (2 failing bug-condition tests, 15 passing, no source changes).",
+    "Gate 3_repro for tb-discovery-mfe approved; Stage 4 fix applied, PR opened, Gate 4 presented."
   ],
   "stories": {
     "tb-discovery-mfe": {
-      "stage": "3-repro",
+      "stage": "4-fix",
       "gates": {
         "1_analysis": "approved",
         "2_rootcause": "approved",
-        "3_repro": null,
+        "3_repro": "approved",
         "4_fix": null
       },
       "branch": "pipeline/bug-typeerror-cannot-read-properties-of/tb-discovery-mfe",
-      "pr_url": null,
+      "pr_url": "https://github.com/MensWearhouse/tb-discovery-mfe/pull/1907",
       "pending_gate": {
-        "gate": "3_repro",
-        "presented_at": "2026-09-29T06:05:30.000Z",
-        "summary": "Reproduce baseline for tb-discovery-mfe: on unfixed code, npm test -- helpers/__tests__/formatters.test.ts shows 2 failed bug-condition tests (undefined/null/non-string) with TypeError at helpers/formatters.ts:47:33 matching rootcause.md, and 15 preservation/other tests passing. git diff confirms no non-test source changes. Branch pipeline/bug-typeerror-cannot-read-properties-of/tb-discovery-mfe. Artifact: .pipeline/.../repro.md."
+        "gate": "4_fix",
+        "presented_at": "2026-09-29T06:08:00.000Z",
+        "summary": "Fix for tb-discovery-mfe: restored typeof queryValue !== 'string' → '' guard in helpers/formatters.ts slugify. All 17 formatters tests pass (bug-condition + preservation); eslint clean on touched files. Scope fence honored (slugify + tests + .pipeline only). PR https://github.com/MensWearhouse/tb-discovery-mfe/pull/1907 left open (not merged). Artifact: .pipeline/.../fix.md."
       }
     }
   }

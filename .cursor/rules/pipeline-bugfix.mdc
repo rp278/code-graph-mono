@@ -47,7 +47,9 @@ and `pending_gate.gate` must use exactly these keys.
 ## Bug-specific hard rules
 
 1. **No source changes before Gate 3.** Stages 1-3 may only add files
-   under `.pipeline/<slug>/` and test files. Any edit to non-test
+   under `codegraph/pipeline/<slug>/<repo>/` (this workspace, never a
+   work repo) and test files. Never create a `.pipeline/` folder in a work
+   repo. Any edit to non-test
    source before Gate 3 is approved is a policy violation.
 2. **The root-cause hypothesis is a claim, not a fact.** Gate 2 asks the
    human to check it. Stage 3's tests exist to falsify it. If the

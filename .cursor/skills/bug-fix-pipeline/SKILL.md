@@ -21,7 +21,16 @@ headless protocol, same PR-opening mechanics — different stages and
 different evidence. Do not re-derive shared mechanics; read them from the
 feature skill where referenced below.
 
-**Repo paths.** The work repos live in `code-repos/` at the workspace root. Everywhere below, `<repo>` means `code-repos/<repo>` (for example `<repo>/.pipeline/<slug>/` is `code-repos/<repo>/.pipeline/<slug>/`).
+**Repo paths.** The work repos live in `code-repos/` at the workspace root. Everywhere below, `<repo>` means `code-repos/<repo>`.
+
+**Artifacts live in this workspace, never in the work repos.** Write
+`bugfix.md`, `rootcause.md`, `repro.md` and `fix.md` to
+`codegraph/pipeline/<slug>/<repo>/` (the *artifact dir*, next to
+`state.json`). Do **not** create a `.pipeline/` folder in any work repo, do
+not write `state-ref.json`, and do not commit or push any of these
+documents. The dashboard reads them from the artifact dir. The only
+files a story may change inside a work repo are the test files (Stage 3)
+and the source fix (Stage 4).
 
 **A bug run ends at an open PR. It never merges.** Do not run
 `gh pr merge`, `gh api ... /merge`, enable auto-merge, or push to the base
@@ -40,9 +49,9 @@ Merging is a human action outside this pipeline. (The feature skill's
 3. Use the slug given in the prompt. `state.json` for this run already
    exists at `codegraph/pipeline/<slug>/state.json` with `agent_id` and
    `"kind": "bug"` — preserve both. Artifacts live under
-   `<repo>/.pipeline/<slug>/` in every repo that gets a story (see
-   `requirement-pipeline` skill, "Before anything else" steps 3-5, for the
-   `state-ref.json` breadcrumb and commit conventions).
+   `codegraph/pipeline/<slug>/<repo>/` (the artifact dir) for every repo
+   that gets a story. Nothing is written to the work repos except tests and
+   the fix.
 4. Story entries for a bug use **bug gate keys**:
    ```json
    "<repo-id>": {
@@ -121,8 +130,9 @@ Merging is a human action outside this pipeline. (The feature skill's
    out>) — located by file search`. For a fallback, list the exact
    search commands and hits instead of graph queries. Never invent graph
    results, and never block Gate 1 because the graph could not help.
-3. Decide which repo(s) actually need a change (usually one). Create
-   `.pipeline/<slug>/` in each and add a story entry per repo.
+3. Decide which repo(s) actually need a change (usually one).    Create
+   the artifact dir `codegraph/pipeline/<slug>/<repo>/` for each and add a
+   story entry per repo.
    **Pick the base branch per repo — do not just use whatever is checked
    out.** The base branch is the branch where the bug actually exists,
    because the story branch is cut from it and the PR targets it:
@@ -141,8 +151,8 @@ Merging is a human action outside this pipeline. (The feature skill's
    - Record `base_branch` in the story's `state.json` entry. If it is not
      the default branch, say so in **Open questions** so the reviewer
      confirms it at Gate 1.
-4. Write `bugfix.md` (identical shared copy in each affected repo, per the
-   feature skill's convention):
+4. Write `codegraph/pipeline/<slug>/<repo>/bugfix.md` (one copy per
+   affected repo's artifact dir, same content):
    - **Signals** (from step 1) and **Graph evidence** (queries + hits, or
      the file-search fallback — see step 2 — labelled as such).
    - **Current behavior** — WHEN <condition> THEN the system <wrong thing>.
@@ -164,7 +174,7 @@ Merging is a human action outside this pipeline. (The feature skill's
 
 1. Read the actual code at the candidate location and trace the failing
    path end to end. Read what calls into it and what it calls.
-2. Write `<repo>/.pipeline/<slug>/rootcause.md`:
+2. Write `codegraph/pipeline/<slug>/<repo>/rootcause.md`:
    - **Hypothesis** — one plain sentence naming the faulty line/logic and
      *why* it produces the observed error.
    - **Evidence** — `file:line` references and the trace that connects
@@ -192,8 +202,8 @@ Merging is a human action outside this pipeline. (The feature skill's
 Branch: `pipeline/<slug>/<repo>` (create it now), cut from
 `origin/<base_branch>` (`git fetch origin && git checkout -b
 pipeline/<slug>/<repo> origin/<base_branch>`) — never from whatever branch
-happens to be checked out. Only **test files** and `.pipeline/<slug>/` may
-change in this stage.
+happens to be checked out. Only **test files** may change in the work repo
+in this stage (`repro.md` goes to the artifact dir, not the repo).
 
 1. **Detect the test setup** from `<repo>/package.json` `scripts.test`:
    - `shop-web`: Vitest + React Testing Library (`npm test`); tests live
@@ -210,11 +220,11 @@ change in this stage.
 3. **Preservation tests** — encode the Unchanged clauses: tests that PASS
    on the current code. Prefer several representative cases over one.
 4. **Run the suite on the unfixed code and record real output** in
-   `repro.md`: the exact command, which tests failed and the failure
+   `codegraph/pipeline/<slug>/<repo>/repro.md`: the exact command, which tests failed and the failure
    message (it must match the hypothesis — if it fails for a *different*
    reason, the hypothesis is wrong: return to Stage 2), which passed, and
-   confirmation that `git diff --stat -- ':!*.test.*' ':!.pipeline'` shows
-   **no non-test source changes**. Commit tests + `repro.md` on the branch.
+   confirmation that `git diff --stat -- ':!*.test.*'` shows
+   **no non-test source changes**. Commit the tests (only) on the branch.
 5. **If a test genuinely cannot express the bug** (race, timing, perf,
    environment-only, no test setup), do not fake one. `repro.md` must
    state the reason, give numbered manual repro steps, and record what
@@ -242,13 +252,15 @@ source changes" (or the stated manual-repro alternative). Headless: write
    empty, the fix does nothing relative to the branch the PR targets
    (usually because the bug is not on that base): stop, do not open the
    PR, and return to Stage 1 to correct `base_branch` (Gate 1 reset).
-4. Write `<repo>/.pipeline/<slug>/fix.md`: what changed and why, before /
+4. Write `codegraph/pipeline/<slug>/<repo>/fix.md`: what changed and why, before /
    after test results, scope check, weaknesses and edge cases (the
    self-critique), and a **traceability table** mapping each Expected and
    Unchanged clause from `bugfix.md` to the test(s) and code that cover it.
-5. Commit `.pipeline/<slug>/` + code on the story branch, push, and open
-   the PR using the exact `gh` pattern in `requirement-pipeline` Stage 4
-   step 3 (PR body = `fix.md`), **but with `--base <base_branch>` from
+5. Commit the code fix on the story branch (source + tests only, no
+   pipeline documents), push, and open the PR using the `gh` pattern in
+   `requirement-pipeline` Stage 4 step 3 (PR body = the artifact-dir
+   `fix.md`, passed with `--body-file codegraph/pipeline/<slug>/<repo>/fix.md`),
+   **but with `--base <base_branch>` from
    `state.json`** instead of the repo's default branch. Record `pr_url` and
    `branch` in `state.json`.
 

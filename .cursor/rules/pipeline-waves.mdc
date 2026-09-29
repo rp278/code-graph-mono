@@ -29,7 +29,7 @@ subagent `Task` calls (per the locked decision in `pipeline/DESIGN.md`
    stories in this requirement. Wave 2 = stories depending only on Wave 1.
    Continue until every story is placed.
 3. State the computed waves explicitly before starting implementation
-   (e.g. in each affected repo's `.pipeline/<slug>/state.json` or as a
+   (e.g. in `codegraph/pipeline/<slug>/state.json` or as a
    message to the user) —
    this itself isn't a separate gate, but should be visible, since it
    determines execution order and what "in progress" means at any moment.

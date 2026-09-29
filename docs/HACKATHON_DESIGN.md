@@ -337,7 +337,7 @@ Every arrow labelled "Gate" is a mandatory human approval. The last box is outsi
 |---|---|---|
 | **1. Analyze and locate** | Pulls signals out of the error (paths, line numbers, function names, routes, table names, error class). Locates the bug with the graph, then walks outward to get the **blast radius**. If the graph is down or has no match, it searches every repo checkout itself and says which path it used (`Graph: used`, `Graph: no matching nodes`, or `Graph: unavailable`). Writes current, expected and unchanged behavior in `WHEN … THEN … SHALL` form, plus a provisional scope fence. | `bugfix.md` |
 | **2. Root cause** | Reads the real code and traces the failing path. States one hypothesis with `file:line` evidence, a **bug condition C**, a **postcondition P**, what must be preserved when C is false, alternatives considered, the proposed fix (approach only) and the final scope fence. No code changes. | `rootcause.md` |
-| **3. Reproduce** | Creates the branch `pipeline/<slug>/<repo>`. Writes a **bug-condition test** that must fail on the unfixed code for the predicted reason, and **preservation tests** that must pass. Runs the repo's own `test` script and records the real output. Only test files and `.pipeline/<slug>/` may change. If a test can't express the bug (race, timing, environment), it says so and gives manual repro steps. | `repro.md` and the tests |
+| **3. Reproduce** | Creates the branch `pipeline/<slug>/<repo>`. Writes a **bug-condition test** that must fail on the unfixed code for the predicted reason, and **preservation tests** that must pass. Runs the repo's own `test` script and records the real output. Only test files may change in the repo. If a test can't express the bug (race, timing, environment), it says so and gives manual repro steps. | `repro.md` and the tests |
 | **4. Fix** | Applies the smallest change inside the scope fence. Runs the full suite, plus lint and build when the repo has them. Tests are never edited or weakened to pass, and a wrong test means resetting Gate 3. Checks the diff against the fence, writes a traceability table (each expected and unchanged clause to its test and code), commits, pushes and opens the PR. | `fix.md` (also the PR body) |
 
 | Gate | State key | The reviewer confirms |
@@ -352,7 +352,7 @@ Every arrow labelled "Gate" is a mandatory human approval. The last box is outsi
 ### 7.2 What makes this different from "ask an agent to fix it"
 
 1. **Test-first, and falsifiable.** The root-cause hypothesis is a claim. Stage 3 exists to *falsify* it. If the failing test fails for a different reason, or doesn't fail, the pipeline returns to Stage 2 and does not proceed with a caveat.
-2. **No source changes before Gate 3.** Stages 1–3 may only add `.pipeline/<slug>/` files and test files.
+2. **No source changes before Gate 3.** Stages 1–3 may only add test files to the repo (documents go to `codegraph/pipeline/<slug>/`).
 3. **Scope fence.** Gate 2 fixes which files and functions the fix may touch. Leaving the fence means widening it and re-presenting Gate 2.
 4. **Preservation tests from the graph.** Unchanged behavior comes from the **blast radius**, including consumers in *other* repos, which is exactly what Graphify's cross-repo edges provide.
 5. **"No test" is a stated outcome, never silent.** For races or environment-only bugs, `repro.md` gives the reason and manual repro steps with observed output.
@@ -390,7 +390,7 @@ sequenceDiagram
 - **Done means the PR is open.** When every story reaches stage `done`, the run shows **Done**. That means "PR open and Gate 4 approved", not "merged".
 - **Pause and Resume.** While the agent is working, **Pause** cancels its in-flight step through the SDK. `state.json` and the repos are left as they are, so the step may be half-finished. Responses queued in the meantime are kept. The header shows **Paused**, and **Resume** continues the *same* agent with a message telling it to re-check what it had actually finished before carrying on. Restart and Delete are available while paused. A pause that arrives just as a turn finishes normally is ignored.
 - **Restart.** This starts the *same* run over: same slug and report, every gate cleared, and a fresh agent at Stage 1. The repos are not cleaned up. The earlier branches and PRs stay, are recorded under `restarts` in `state.json`, and the new agent is told to leave them alone and cut a new `-r<N>` branch. It is refused while the agent is mid-turn (pause it first).
-- **Delete.** This removes the run's record (`codegraph/pipeline/<slug>/`) after a confirmation in the dashboard. Branches, PRs and `.pipeline/<slug>/` files in the repos are not touched. It is refused while the agent is mid-turn (pause it first).
+- **Delete.** This removes the run's record (`codegraph/pipeline/<slug>/`) after a confirmation in the dashboard. Branches and PRs in the repos are not touched. It is refused while the agent is mid-turn (pause it first).
 
 ### 7.4 Changing the report mid-run (cascade)
 
@@ -406,14 +406,16 @@ A bug that regresses after someone merged the fix is a **new run** with its own 
 ### 7.5 Artifacts and the PR
 
 ```
-<repo>/.pipeline/<slug>/          committed on the story branch,
-                                  so it travels with the PR
-  bugfix.md                       analysis
-  rootcause.md                    hypothesis, condition, scope fence
-  repro.md                        real test output on unfixed code
-  fix.md                          what changed, results, traceability
-  state-ref.json                  pointer to the canonical state.json
+codegraph/pipeline/<slug>/
+  state.json                      canonical run state
+  <repo>/                         one folder per affected repo
+    bugfix.md                     analysis
+    rootcause.md                  hypothesis, condition, scope fence
+    repro.md                      real test output on unfixed code
+    fix.md                        what changed, results, traceability
 ```
+
+Nothing from this folder is written to or committed in the work repos; the story branch holds only the fix and its tests.
 
 - Branch: `pipeline/<slug>/<repo>`. The PR body is `fix.md`. The write-scoped token used for this comes from the keychain and is never printed.
 - **The PR stays open.** After Gate 4 nothing touches it. A person reads the diff and the artifacts, then merges it (or doesn't).

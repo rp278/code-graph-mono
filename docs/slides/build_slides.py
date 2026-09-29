@@ -461,7 +461,7 @@ footer(s, 8)
 # ---------------------------------------------------------------------------
 s = new_slide(
     "Paste an error; the agent works through four stages with four mandatory human gates. Stages 1 to 3 may "
-    "not touch source: only .pipeline/<slug>/ files and test files. Stage 3 exists to falsify the "
+    "not touch source: only test files (documents go to codegraph/pipeline/). Stage 3 exists to falsify the "
     "hypothesis; if the failing test fails for a different reason, we return to root cause. When Gate 4 is "
     "approved the run is done: the pipeline stops at an open PR and never merges. A person reviews and merges."
 )
@@ -497,7 +497,7 @@ text(s, 0.95, 4.95, 11.4, 0.5,
      "After Gate 4, merge_status: not_merged. A person reads the diff and the artifacts, then merges (or doesn't).",
      size=14)
 # rules
-rules = [("No source edits before Gate 3", "Only tests and .pipeline/ files"),
+rules = [("No source edits before Gate 3", "Only test files in the repo"),
          ("Scope fence", "Fixed at Gate 2; widening re-opens it"),
          ("Never merges", "Agent may not run gh pr merge")]
 for i, (t, d) in enumerate(rules):

@@ -28,6 +28,7 @@ from pathlib import Path
 from .extract import extract, _make_id
 from .extract_packages import package_graph
 from .extract_services import build_registry, find_service_calls, match_endpoint, service_id
+from .extract_units import annotate_units
 from .extract_backends import extract_next, extract_spring, fastify_prefixes, spring_base_path
 from .extract_frameworks import extract_frameworks, _endpoint_id, _path_matches
 from .validate import validate_extraction as validate
@@ -179,6 +180,15 @@ def build_repos(repos: list[dict]) -> dict:
         all_nodes.extend(fw_nodes)
         all_edges.extend(base.get("edges", []))
         all_edges.extend(fw_edges)
+
+    # ── workspace units: apps/* and packages/* inside monorepo wrappers ──────
+    for repo in repos:
+        name = repo["name"]
+        r_nodes = [n for n in all_nodes if n.get("repo") == name]
+        r_edges = [e for e in all_edges if e.get("repo") == name]
+        u_nodes, u_edges = annotate_units(name, Path(repo["path"]), r_nodes, r_edges)
+        all_nodes.extend(u_nodes)
+        all_edges.extend(u_edges)
 
     # ── package graph: publishable packages + who depends on / imports them ──
     pkg_nodes, pkg_edges = package_graph(files_by_repo)

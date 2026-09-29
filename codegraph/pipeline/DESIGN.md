@@ -297,6 +297,10 @@ this one file first, it tells you exactly where every story stands.
 
 ### 9.4 Folder layout
 
+> **Superseded by §10.2c:** run documents now live in
+> `codegraph/pipeline/<slug>/<repo>/`, not in `<repo>/.pipeline/`. The tree
+> below shows the earlier layout.
+
 Rules and the orchestrating skill live at the workspace root (they span
 all 4 repos) — that part is unchanged. **Per-run artifacts live inside
 each affected repo's own hidden `.pipeline/` folder**, per decision #2
@@ -376,7 +380,20 @@ approval matters for advancing past a gate.
    `.cursor/rules/*` and `.cursor/skills/*`) still live at the
    workspace root / in `codegraph` — only **run output** moved.
 
-### 10.2a Amendment: artifact location moved out of `codegraph`
+### 10.2c Amendment: artifacts stay in this workspace (supersedes §10.2a/§10.2b)
+
+Pipelines no longer write anything into the work repos except code and
+tests. All run documents live at
+`codegraph/pipeline/<slug>/<repo>/*.md`, next to
+`codegraph/pipeline/<slug>/state.json`. No `.pipeline/` folder, no
+`state-ref.json`, and the documents are not committed on story branches.
+The PR body is generated from `fix.md` / `critique.md` in the artifact
+dir. Reasons: company repos should not receive pipeline files, and the
+dashboard can show every run's analysis and root cause from one place.
+The layout in §9.4 and the wording in §10.2a/§10.2b describe the earlier
+design and are kept for history only.
+
+### 10.2a Amendment: artifact location moved out of `codegraph` (superseded by §10.2c)
 
 Reversed from the original decision #2 above. Per-run artifacts now
 live at `<repo>/.pipeline/<requirement-slug>/...` inside every repo a

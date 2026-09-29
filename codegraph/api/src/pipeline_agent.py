@@ -104,6 +104,43 @@ def _read_state(slug: str) -> dict[str, Any]:
     return json.loads(f.read_text())
 
 
+_ARTIFACT_ORDER = [
+    "requirement", "stories", "bugfix", "design", "rootcause", "repro",
+    "fix", "critique", "traceability", "qa-checklist",
+]
+_SLUG_RE = re.compile(r"^[a-z0-9][a-z0-9._-]*$")
+
+
+def get_artifacts(slug: str) -> dict[str, Any]:
+    """The markdown documents a run wrote, per repo.
+
+    They live at `codegraph/pipeline/<slug>/<repo>/*.md` (never in the work
+    repos). Returns `{"repos": {repo: [{name, file, content, updated_at}]}}`
+    with documents in pipeline order.
+    """
+    if not _SLUG_RE.match(slug or ""):
+        raise PipelineAgentError(f"no such requirement run: '{slug}'")
+    base = PIPELINE_DIR / slug
+    if not base.is_dir():
+        raise PipelineAgentError(f"no such requirement run: '{slug}'")
+    repos: dict[str, list[dict[str, Any]]] = {}
+    for d in sorted(p for p in base.iterdir() if p.is_dir()):
+        docs = []
+        for f in d.glob("*.md"):
+            docs.append({
+                "name": f.stem,
+                "file": f.name,
+                "content": f.read_text(errors="replace"),
+                "updated_at": datetime.fromtimestamp(f.stat().st_mtime, timezone.utc).isoformat(),
+            })
+        docs.sort(key=lambda x: (
+            _ARTIFACT_ORDER.index(x["name"]) if x["name"] in _ARTIFACT_ORDER else 99, x["name"]
+        ))
+        if docs:
+            repos[d.name] = docs
+    return {"slug": slug, "repos": repos}
+
+
 def _write_state(slug: str, state: dict[str, Any]) -> None:
     f = _state_file(slug)
     f.parent.mkdir(parents=True, exist_ok=True)
@@ -290,7 +327,8 @@ def _headless_prompt(
             "tell which, say so under Open questions at Gate 1). Cut a NEW "
             f"story branch with the suffix `-r{restart['attempt']}` appended to "
             "the usual name, and write fresh artifacts under "
-            f"`.pipeline/{slug}/` on it.\n\n"
+            f"`codegraph/pipeline/{slug}/<repo>/` (this workspace, never "
+            "inside a work repo).\n\n"
         )
     state_rule = (
         f"Use slug `{slug}` exactly — it has already been reserved and a "
@@ -627,7 +665,7 @@ _RESUME_MESSAGE = (
     "The user paused this run while you were working and has now resumed it. "
     "Your last step may have been cut off part-way. Before continuing, re-read "
     "this run's state.json and check the repo (`git status`, `git log`, the "
-    "`.pipeline/<slug>/` artifacts) to see what was actually finished, redo "
+    "`codegraph/pipeline/<slug>/<repo>/` artifacts) to see what was actually finished, redo "
     "anything half-done, and then carry on from where you were. Gate rules are "
     "unchanged: still stop at each gate for approval, and never merge."
 )
@@ -673,9 +711,8 @@ _SLUG_RE = re.compile(r"^[a-z0-9][a-z0-9-]*$")
 def delete_requirement(slug: str) -> dict[str, Any]:
     """Delete a run's record (`codegraph/pipeline/<slug>/`).
 
-    Only the run record goes. The repos are deliberately NOT touched: any
-    branch, PR or `.pipeline/<slug>/` files an attempt left behind stay
-    where they are. Refused while the run is mid-turn, since an in-flight
+    Only the run record (state.json and the artifact docs) goes. The repos are deliberately NOT touched: any
+    branch or PR an attempt left behind stays where it is. Refused while the run is mid-turn, since an in-flight
     agent can't be stopped and would just recreate state.json. The slug is
     validated and the resolved path must sit directly inside PIPELINE_DIR.
     """
@@ -702,7 +739,7 @@ def restart_requirement(slug: str) -> dict[str, Any]:
 
     Every gate is cleared and a brand-new agent (fresh context) starts at
     Stage 1. The repos are deliberately NOT cleaned up: the earlier
-    attempt's branches, PRs and `.pipeline/<slug>/` files stay where they
+    attempt's branches and PRs stay where they
     are (recorded under `restarts` in state.json and passed to the new
     agent, which is told to leave them alone and cut a new `-r<N>` branch).
     Refused while the run is mid-turn, since an in-flight agent can't be

@@ -867,6 +867,18 @@ body {
 .req-detail-text { margin: 0; color: var(--text); line-height: 1.5; font-size: 14px; }
 
 .story-cards { display: flex; flex-direction: column; gap: 10px; }
+.story-docs { display: flex; flex-direction: column; gap: 8px; align-items: flex-start; }
+.story-doc-tabs { display: flex; flex-wrap: wrap; gap: 4px 12px; }
+.story-doc-tab.active { font-weight: 600; text-decoration: underline; }
+.story-doc-body {
+  align-self: stretch;
+  max-height: 460px;
+  overflow: auto;
+  padding: 10px 12px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  font-size: 13px;
+}
 .story-card {
   background: var(--panel);
   border: 1px solid var(--border);

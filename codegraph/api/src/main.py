@@ -593,6 +593,15 @@ def get_requirement(slug: str) -> dict[str, Any]:
         raise HTTPException(404, str(e))
 
 
+@app.get("/api/requirements/{slug}/artifacts", dependencies=[auth])
+def get_requirement_artifacts(slug: str) -> dict[str, Any]:
+    """Analysis / root cause / repro / fix (or stories / design / ...) documents of a run."""
+    try:
+        return pipeline_agent.get_artifacts(slug)
+    except pipeline_agent.PipelineAgentError as e:
+        raise HTTPException(404, str(e))
+
+
 @app.post("/api/requirements", status_code=201, dependencies=[auth])
 def start_requirement(body: RequirementIn) -> dict[str, Any]:
     """Start a new pipeline run via the Cursor SDK (local runtime).

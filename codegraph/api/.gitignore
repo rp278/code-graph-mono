@@ -4,3 +4,4 @@ __pycache__/
 .env
 repos.local.json
 .agent-store/
+repos.json

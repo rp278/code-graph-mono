@@ -1,0 +1,41 @@
+codegraph/video/data/ask.json
+  s_ecd3df3fe4768d::t_5dff51ef94f350 6,10-11,14,18-19,22-23,26-27,30-51,54,60,70,81,91,123,133,150,161,170
+codegraph/video/data/entry.json
+  s_ecd3df3fe4768d::t_1c8cc64a092c0f 1
+codegraph/video/data/graph.json
+  s_ecd3df3fe4768d::t_b90b27113bbbb5 7,13,19,25,31,37
+codegraph/video/data/script.json
+  s_ecd3df3fe4768d::t_f10335d6df3eb4 2-3,55-56,69-70,74-75,79,83,87,91,106
+codegraph/video/data/vo.json
+  s_ecd3df3fe4768d::t_2035e948c1b6da 2-18
+codegraph/video/scripts/capture-ask.mjs
+  s_ecd3df3fe4768d::t_d4fcbdc401f8c7 21-23
+codegraph/video/scripts/capture-entry.mjs
+  s_ecd3df3fe4768d::t_5d4db689cd0d36 1-25
+codegraph/video/scripts/capture-graph.mjs
+  s_ecd3df3fe4768d::t_8c38eea76ba2d6 9
+codegraph/video/scripts/make-audio.mjs
+  s_ecd3df3fe4768d::t_c5d2cb9b8c01da 4,29
+codegraph/video/src/FixScreen.tsx
+  s_ecd3df3fe4768d::t_9dad7b8bbbcbcd 9-20,22,24-27,30-33,44-51,59,61-63,67,70-72,75-76,78-79,81,98,107-108,113-121,124,148,168,183-194,196,209,240
+docs/HACKATHON_DESIGN.md
+  s_ecd3df3fe4768d::t_aeb54b7ce630e4 24,104,389
+docs/slides/build_slides.py
+  s_ecd3df3fe4768d::t_377388626c42da 517-519,528
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.4",
+  "base_commit_sha": "cbe2cc4b0e2c79a94880ec0ec3968a1eed60936c",
+  "prompts": {},
+  "sessions": {
+    "s_ecd3df3fe4768d": {
+      "agent_id": {
+        "tool": "cursor",
+        "id": "1d10e64f-8c4b-4af1-8786-2663295cab40",
+        "model": "claude-sonnet-5-5"
+      },
+      "human_author": "Ramesh Polishetti <rp278@tmw.com>"
+    }
+  }
+}

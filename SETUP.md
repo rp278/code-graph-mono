@@ -6,8 +6,8 @@ Neo4j is optional (see [With or without Neo4j](#with-or-without-neo4j)).
 ## Quick start
 
 ```bash
-git clone https://github.com/techfxs/code-graph-wsp.git
-cd code-graph-wsp
+git clone git@github.com:rp278/code-graph-mono.git
+cd code-graph-mono
 ./setup.sh --check     # verifies git, Node 20+, Python 3.10+, gh
 ./setup.sh             # links the work repos, installs codegraph + graphify, creates config
 ```
@@ -91,7 +91,7 @@ checkouts, so it also reflects uncommitted changes.
 
 The pipelines open real pull requests (the feature pipeline also merges them;
 the **bug-fix pipeline stops at an open PR and never merges**), so the machine
-needs write access to the `techfxs` repos even if they are public:
+needs write access to the work repos' GitHub remotes (currently `MensWearhouse/*`) even if they are public:
 
 ```bash
 brew install gh

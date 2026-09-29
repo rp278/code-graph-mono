@@ -49,7 +49,7 @@ you need the *why* behind any of this.
      }
    }
    ```
-   Commit it directly to `codegraph`'s `master` (no PR — it's not
+   Commit it directly to `main` of this monorepo (`rp278/code-graph-mono`; no PR — it's not
    repo-specific code, there's nothing for a PR to review). Update this
    one file as stages/gates complete; that's what makes a run resumable
    in a later chat session, even days later — see "Resuming a run"
@@ -152,7 +152,10 @@ Per story, once implemented:
    ```bash
    bash -c '
    export GH_TOKEN=$(printf "protocol=https\nhost=github.com\n\n" | git credential fill | sed -n "s/^password=//p")
-   gh pr create --repo techfxs/<repo> --base master --head pipeline/<slug>/<repo> \
+   # <owner>/<repo> and <base> come from the work repo itself, not from this monorepo:
+   #   git -C <repo> remote get-url origin        -> owner/repo
+   #   git -C <repo> symbolic-ref --short refs/remotes/origin/HEAD  -> base branch
+   gh pr create --repo <owner>/<repo> --base <base> --head pipeline/<slug>/<repo> \
      --title "<story title>" --body-file <repo>/.pipeline/<slug>/critique.md
    unset GH_TOKEN
    '
@@ -163,7 +166,7 @@ Per story, once implemented:
    (REST, not GraphQL) instead. `gh pr create`/`gh pr comment`/`gh pr
    merge` are unaffected.
 4. Record the PR URL in `codegraph/pipeline/<slug>/state.json` (the one
-   canonical copy) and commit that change directly to `codegraph`.
+   canonical copy) and commit that change directly to `main` of `rp278/code-graph-mono`.
 
 **GATE 3**: present the diff + `critique.md` (+ PR link, for reference)
 in chat. Get explicit approval before moving to traceability. Approval
@@ -189,7 +192,7 @@ whether this gate passes.
 2. Save as `<repo>/.pipeline/<slug>/qa-checklist.md`, post as a PR comment.
 
 **GATE 5** (final): present the checklist, get explicit acceptance. Only
-now set that story's status to `"done"` in `codegraph`'s `state.json`.
+now set that story's status to `"done"` in `codegraph/pipeline/<slug>/state.json`.
 
 ## Stage 7 — Merge
 
@@ -197,15 +200,13 @@ Once Gate 5 has passed for a story, merge its PR:
 ```bash
 bash -c '
 export GH_TOKEN=$(printf "protocol=https\nhost=github.com\n\n" | git credential fill | sed -n "s/^password=//p")
-gh pr merge <number> --repo techfxs/<repo> --squash
+gh pr merge <number> --repo <owner>/<repo> --squash
 unset GH_TOKEN
 '
 ```
-This push to `master` fires the existing GitHub Action → `/api/graph/rebuild`
-automatically (already built and verified — no action needed beyond the
-merge itself). Confirm the merge landed and, optionally, that the rebuild
-fired (check `pulled` in the API response or poll the VM's git log, as
-done during earlier verification this session).
+Confirm the merge landed. Do NOT call the API's `/api/graph/rebuild` (it runs
+`git pull --ff-only` in the real work repos); the user refreshes the graph
+themselves with the graphify command in `.cursor/rules/codegraph.md`.
 
 ## Resuming a run (same story, days later, new chat session)
 

@@ -27,7 +27,7 @@ from pathlib import Path
 
 from .extract import extract, _make_id
 from .extract_packages import package_graph
-from .extract_services import find_service_calls, match_endpoint, service_id
+from .extract_services import build_registry, find_service_calls, match_endpoint, service_id
 from .extract_backends import extract_next, extract_spring, fastify_prefixes, spring_base_path
 from .extract_frameworks import extract_frameworks, _endpoint_id, _path_matches
 from .validate import validate_extraction as validate
@@ -112,6 +112,8 @@ def build_repos(repos: list[dict]) -> dict:
 
     files_by_repo = {r["name"]: collect_repo_files(Path(r["path"])) for r in repos}
     svc_calls: list[dict] = []  # files that read <X>_XAPI_BASE_URL (service-to-service calls)
+    registry = build_registry(repos)  # repos that declare `reached_via` in the manifest
+    prefix_segs_by_repo = {e["repo"]: e["prefix_segs"] for e in registry}
 
     for repo in repos:
         name = repo["name"]
@@ -136,11 +138,12 @@ def build_repos(repos: list[dict]) -> dict:
                 sp = extract_spring(f, name, java_base)
                 fw_nodes.extend(sp["nodes"])
                 fw_edges.extend(sp["edges"])
-            if f.suffix in JS_SUFFIXES:
-                sc = find_service_calls(f)
+            if f.suffix in JS_SUFFIXES or (f.suffix == ".java" and registry):
+                sc = find_service_calls(f, registry)
                 if sc:
                     svc_calls.append({"repo": name, "file": str(f),
                                       "file_nid": f"{name}::{_make_id(f.stem)}", **sc})
+            if f.suffix in JS_SUFFIXES:
                 fw = extract_frameworks(f, name, prefix_by_file.get(str(f.resolve()), ""))
                 nx = extract_next(f, name)  # Next.js route.ts / page.tsx
                 fw_nodes.extend(fw["nodes"] + nx["nodes"])
@@ -230,7 +233,8 @@ def build_repos(repos: list[dict]) -> dict:
             # narrow to the target's real endpoints using the path literals in this file
             svc_name = target.replace("tb-", "", 1)  # e.g. marketing-xapi
             for ep_segs, ep in eps_by_repo.get(target, []):
-                rel = ep_segs[2:] if ep_segs[:2] == ["api", svc_name] else ep_segs
+                strip = prefix_segs_by_repo.get(target) or ["api", svc_name]
+                rel = ep_segs[len(strip):] if ep_segs[:len(strip)] == strip else ep_segs
                 if not rel:
                     continue
                 best = None

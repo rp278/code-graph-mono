@@ -14,6 +14,15 @@ environment, e.g. ``process.env.MARKETING_XAPI_BASE_URL`` or
 
 A service that is not one of the registered repos (e.g. ``tb-txn-util-xapi``)
 becomes an ``external`` stub so the dependency is still visible.
+
+Repos that do not follow the ``tb-<x>-xapi`` naming can declare how callers reach
+them with a ``reached_via`` entry in ``repos.manifest.json`` (copied into the
+repos file the build reads)::
+
+    "reached_via": {"env": ["CMS_CONTENT_URL"], "url_prefix": "/contentstack/api"}
+
+A file that mentions one of those env vars, or a string containing the URL
+prefix, then calls that repo, exactly like the built-in ``_XAPI_`` rule.
 """
 from __future__ import annotations
 
@@ -37,6 +46,28 @@ def service_id(repo: str) -> str:
     return f"service:{repo}"
 
 
+def build_registry(repos: list[dict]) -> list[dict]:
+    """Compile the ``reached_via`` entries of ``[{name, path, reached_via?}]``.
+
+    Returns ``[{"repo": name, "env": compiled-regex | None, "prefix": "/a/b" | "",
+    "prefix_segs": ["a", "b"]}]`` for the repos that declare one.
+    """
+    out: list[dict] = []
+    for r in repos:
+        rv = r.get("reached_via") or {}
+        envs = [e for e in (rv.get("env") or []) if e]
+        prefix = "/" + str(rv.get("url_prefix") or "").strip("/") if rv.get("url_prefix") else ""
+        if not envs and not prefix:
+            continue
+        out.append({
+            "repo": r["name"],
+            "env": re.compile(r"\b(?:" + "|".join(re.escape(e) for e in envs) + r")\b") if envs else None,
+            "prefix": prefix,
+            "prefix_segs": [s for s in prefix.split("/") if s],
+        })
+    return out
+
+
 def _path_literals(text: str) -> list[list[str]]:
     """Normalised path literals of a file, as segment lists (``:param`` for ``${..}``)."""
     out: list[list[str]] = []
@@ -57,18 +88,32 @@ def _path_literals(text: str) -> list[list[str]]:
     return out
 
 
-def find_service_calls(path: Path) -> dict | None:
-    """``{"services": {repo_name: first_line}, "literals": [[seg, ...], ...]}`` or None."""
+def find_service_calls(path: Path, registry: list[dict] | None = None) -> dict | None:
+    """``{"services": {repo_name: first_line}, "literals": [[seg, ...], ...]}`` or None.
+
+    ``registry`` (from :func:`build_registry`) adds config-declared repos on top
+    of the built-in ``<X>_XAPI_BASE_URL`` rule.
+    """
     try:
         text = path.read_text(encoding="utf-8", errors="replace")
     except OSError:
         return None
-    if "_XAPI_" not in text:
-        return None
     services: dict[str, int] = {}
-    for m in ENV_RE.finditer(text):
-        repo = service_repo_name(m.group(1))
-        services.setdefault(repo, text.count("\n", 0, m.start()) + 1)
+    if "_XAPI_" in text:
+        for m in ENV_RE.finditer(text):
+            repo = service_repo_name(m.group(1))
+            services.setdefault(repo, text.count("\n", 0, m.start()) + 1)
+    for entry in registry or []:
+        hit = None
+        if entry["env"]:
+            hit = entry["env"].search(text)
+        if hit is None and entry["prefix"]:
+            i = text.find(entry["prefix"])
+            if i >= 0:
+                hit = i
+        if hit is not None:
+            pos = hit.start() if hasattr(hit, "start") else hit
+            services.setdefault(entry["repo"], text.count("\n", 0, pos) + 1)
     if not services:
         return None
     return {"services": services, "literals": _path_literals(text)}

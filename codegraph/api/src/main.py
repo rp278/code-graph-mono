@@ -441,7 +441,11 @@ def _do_one_rebuild(repos: list[dict[str, Any]]) -> dict[str, Any]:
         )
     pull_log = [_git_pull(GRAPHIFY_DIR)]
     pull_log += [_git_pull(Path(r["path"])) for r in repos]
-    repos_json = json.dumps([{"name": r["id"], "path": r["path"]} for r in repos])
+    repos_json = json.dumps([
+        {"name": r["id"], "path": r["path"],
+         **({"reached_via": r["reached_via"]} if r.get("reached_via") else {})}
+        for r in repos
+    ])
     tmp = BASE_DIR / ".rebuild-repos.json"
     tmp.write_text(repos_json)
     env = dict(os.environ)

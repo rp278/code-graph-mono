@@ -132,10 +132,12 @@ if [ ! -f "$API/repos.local.json" ]; then
   "$PYTHON" - "$ROOT" "$API/repos.local.json" "$MANIFEST" <<'PY'
 import json, sys
 root, out, manifest = sys.argv[1], sys.argv[2], sys.argv[3]
-repos = [
-    {"id": r["name"], "name": r["name"], "language": r.get("language", "typescript"), "path": f"{root}/code-repos/{r['name']}"}
-    for r in json.load(open(manifest))
-]
+repos = []
+for r in json.load(open(manifest)):
+    entry = {"id": r["name"], "name": r["name"], "language": r.get("language", "typescript"), "path": f"{root}/code-repos/{r['name']}"}
+    if r.get("reached_via"):
+        entry["reached_via"] = r["reached_via"]
+    repos.append(entry)
 open(out, "w").write(json.dumps(repos, indent=2) + "\n")
 PY
   ok "created api/repos.local.json for $ROOT"

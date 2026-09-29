@@ -120,6 +120,24 @@ The dashboard's **Feature Development** screen is hidden by default. To show it,
 To use different repos, edit it and re-run `./setup.sh`; the pipelines and graph follow
 `codegraph/api/repos.local.json`, which `setup.sh` generates from it.
 
+### How repos are linked in the graph (`reached_via`)
+
+The graph draws an arrow from one repo to another when a file calls it. Graphify recognizes calls through
+`<X>_XAPI_BASE_URL` env vars automatically (mapped to `tb-<x>-xapi`). For anything else, declare how a repo is
+reached in `repos.manifest.json`:
+
+```json
+{"name": "ecom-content-stack", "github": "MensWearhouse/ecom-content-stack", "language": "java",
+ "reached_via": {"env": ["CMS_CONTENT_URL", "NAVIGATION_API_BASE_URL"], "url_prefix": "/contentstack/api"}}
+```
+
+- `env`: env var names that callers use for this repo's base URL.
+- `url_prefix`: a URL path that identifies this repo (its endpoints are matched under it).
+- Omit `reached_via` for repos nobody calls over HTTP (libraries such as `kairos-fabric`, or the MFEs).
+
+`setup.sh` copies `reached_via` into `codegraph/api/repos.local.json`. If you edit the manifest after that file
+exists, add the same `reached_via` there (or delete the file and re-run `./setup.sh`), then rebuild the graph.
+
 The pipeline agents **change these repos** (branches, commits, PRs). A clone made by `setup.sh`
 is dedicated to that, which is the safest choice. If you link an existing checkout instead, pipeline
 runs will touch your real working tree, so keep it clean and on its default branch.

@@ -1,0 +1,22 @@
+.DS_Store
+
+# Secrets — never commit. Only *.example files are allowed.
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+
+# The project repos live inside this folder but are their own git repos
+# (cloned or symlinked by setup.sh) — never track them here.
+/codegraph/
+/graphify/
+/tb-common-mfe
+/tb-discovery-mfe
+/tb-marketing-xapi
+/tb-discovery-xapi
+/tb-selection-xapi
+/kairos-fabric
+
+# Office/Keynote lock files created while a document is open
+~$*

@@ -1,0 +1,135 @@
+---
+description: >-
+  The requirement-intake pipeline's gate policy. Read this whenever running
+  the requirement-pipeline skill, or any time a story is moving between
+  pipeline stages (analysis, planning, implementation, critique,
+  traceability, QA). Defines the 5 mandatory approval gates and the hard
+  no-skip rule.
+alwaysApply: false
+---
+
+# Pipeline gate policy
+
+This workspace runs a gated, multi-stage pipeline for turning a requirement
+into cross-repo, QA-ready changes (see `pipeline/DESIGN.md`). It has exactly
+5 gates. **Every story passes through every gate. No gate is ever skipped,
+deferred, or auto-approved — regardless of how small, low-risk, or obvious
+a story seems.** This is a hard rule with no exceptions clause. It was
+explicitly decided this way after considering and rejecting a
+risk-based skip-gates option.
+
+## The 5 gates
+
+| # | Gate | Blocks progress from | Artifact it reviews |
+|---|------|----------------------|----------------------|
+| 1 | Story approval | Stage 1 → Stage 2 | `stories.md` (EARS stories) |
+| 2 | Plan approval | Stage 2 → Stage 3 | `<repo>/design.md` |
+| 3 | Implementation approval | Stage 4 → Stage 5 | the diff + `<repo>/critique.md` |
+| 4 | Traceability sign-off | Stage 5 → Stage 6 | `<repo>/traceability.md` |
+| 5 | QA checklist acceptance | Stage 6 → Stage 7 (merge) | `<repo>/qa-checklist.md` |
+
+## Rules for every gate
+
+1. **Stop and wait.** After producing a gate's artifact, present it and
+   explicitly ask for approval (use `AskQuestion` for a clean approve/
+   revise choice, or a direct question in prose). Do not proceed to the
+   next stage in the same turn you present the artifact.
+2. **Silence, an unrelated reply, or a "looks fine, continue with
+   everything" style blanket message is NOT approval** for a specific
+   gate unless the user's message clearly refers to that specific
+   artifact/story. If in doubt, ask which stories/gates the approval
+   covers.
+3. **No batching gates.** Even if 5 stories all look trivial, each one's
+   Gate 1 (and 2, 3, 4, 5) is presented and approved individually — or, if
+   the user explicitly approves a named batch of stories in one message
+   ("approve all 5 shown above"), that counts as 5 individual approvals,
+   not a policy change to skip future gates.
+4. **Rejection loops back, never forward.** If a gate fails (user requests
+   changes), return to the stage that produced the rejected artifact and
+   redo it — do not carry the story forward with a "noted, will fix
+   later" caveat.
+5. **PRs are informational only, not a gate.** A PR is still opened per
+   story for visibility/CI/history, and critique/traceability/QA docs
+   are still posted to it — but no gate depends on any GitHub-side PR
+   state (open, reviewed, approved, checks green/red). Chat approval
+   alone is what advances a story past a gate. (Amended — see
+   `pipeline/DESIGN.md` §10.1a; this previously required PR review as a
+   companion check, which has been removed.)
+6. **Never mark a story "done" in `state.json` before Gate 5 passes.**
+7. **Requirement changes mid-run cascade backward, not just forward.**
+   If the requirement changes while a story is in flight (not yet merged),
+   don't just patch the current stage and move on:
+   - Find the **earliest already-approved gate whose artifact the change
+     actually invalidates** — not just the gate that happened to be open
+     when the change arrived. (Example: a field-name change requested at
+     Gate 4 also invalidated Gate 3's already-approved implementation and
+     Gate 1's story text, even though only Gate 4 was open at the time.)
+   - **Reset that gate and every gate after it** to pending in
+     `state.json`. Leave earlier, genuinely-unaffected gates and
+     unaffected stories/repos alone — don't reset the whole story or
+     other stories in the same requirement if they weren't touched.
+   - **Update every already-produced artifact** the change affects —
+     `stories.md`, `design.md`, `critique.md`, `traceability.md`,
+     `qa-checklist.md`, not just the code. A find-and-replace across docs
+     without re-verifying live is not sufficient.
+   - **Re-verify live**, don't assume a text-level change is equivalent
+     to the tested behavior — re-run the same tests/checks that passed
+     before, against the new version.
+   - **Re-present only the reset gates** for fresh approval, and log the
+     whole cascade (what changed, which gates reset, why) in
+     `state.json`'s `notes` array.
+8. **Requirement changes after a story has already merged (Stage 7 done)
+   are a new requirement, not a reopened one.** There is no rolling back
+   a merge. Treat it as its own pipeline run with its own slug (e.g.
+   `<original-slug>-<what-changed>`), full Gate 1-5 cycle included, with
+   its `requirement.md` noting which prior run it amends. Stage 1's live
+   graph query naturally reflects the already-merged code, so this
+   requires no special handling beyond normal Stage 1 grounding. Do not
+   silently hotfix merged code outside the pipeline without the user
+   explicitly and separately authorizing a bypass for a stated reason.
+
+## Headless mode (invoked via the Cursor SDK, no chat human present)
+
+Some runs are started by the `codegraph` dashboard's "Requirements" tab
+via the Cursor SDK (`cursor-sdk`), not by a human typing in this chat. The
+initial prompt for such a run will say so explicitly
+(`"HEADLESS_MODE: true"` or similar). When operating headlessly, gate
+presentation changes — everything else about the pipeline (stages,
+artifacts, the no-skip rule, the cascade rules above) is identical:
+
+1. **Never call `AskQuestion`** — there is no one to answer it. Instead,
+   when a gate is reached: write the artifact as normal, then write a
+   `pending_gate` object into that story's entry in
+   `codegraph/pipeline/<slug>/state.json`:
+   ```json
+   "pending_gate": {
+     "gate": "3_impl",
+     "presented_at": "<iso-8601 timestamp>",
+     "summary": "one-paragraph plain-English summary of what's being approved"
+   }
+   ```
+2. **Commit and push** whatever the gate's artifact requires exactly as
+   in interactive mode (same commits, same PRs) — headless mode changes
+   *how approval is requested*, not what gets built or how it's recorded.
+3. **End the turn immediately after writing `pending_gate`.** Do not
+   guess at approval, do not continue to the next stage, do not produce
+   more than one gate's worth of work in a single headless turn.
+4. **Resuming**: the next message you receive (via `Agent.resume` +
+   `agent.send`) will be either an approval (`"gate <id> for <repo>:
+   approved"`) or a revision request (`"gate <id> for <repo>: revise —
+   <feedback>"`). On approval: clear `pending_gate`, mark the gate
+   `"approved"` in `state.json`, proceed to the next stage. On revision:
+   apply rule 4 above (rejection loops back), then re-present (new
+   `pending_gate`) once redone.
+5. **A message that doesn't reference a specific `gate`/`repo`** (e.g. a
+   requirement-change message) should be handled per rules 7-8 above —
+   the cascade logic applies the same way whether the message came from
+   chat or from a dashboard-submitted update.
+
+## Why this exists
+
+This pipeline is meant to produce auditable, traceable, QA-verifiable
+changes across multiple repos. A single skipped gate — even on something
+that "obviously" works — breaks that guarantee for the whole story, since
+there's no way to tell from the outside which stories were actually
+verified and which were waved through.

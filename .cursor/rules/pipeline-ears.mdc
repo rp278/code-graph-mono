@@ -1,0 +1,82 @@
+---
+description: >-
+  EARS (Easy Approach to Requirements Syntax) notation reference. Read this
+  during Stage 1 (Analyze & Decompose) of the requirement pipeline, whenever
+  writing or reviewing a story's acceptance criteria in stories.md.
+alwaysApply: false
+---
+
+# EARS notation reference
+
+Every pipeline story's acceptance criteria are written in EARS notation —
+not free-form prose. EARS forces each requirement into one unambiguous,
+testable sentence: a trigger/condition and an observable system response.
+This is what Stage 5's traceability matrix and Stage 6's QA checklist are
+built from, so vague requirements here become vague/unverifiable checks
+later — get this stage right.
+
+## The 5 EARS patterns
+
+1. **Ubiquitous** (always true, no trigger):
+   ```
+   THE SYSTEM SHALL <response>
+   ```
+2. **Event-driven** (most common — a trigger causes a response):
+   ```
+   WHEN <trigger/event>
+   THE SYSTEM SHALL <response>
+   ```
+3. **State-driven** (true for as long as a state holds):
+   ```
+   WHILE <state>
+   THE SYSTEM SHALL <response>
+   ```
+4. **Unwanted behavior** (error/edge-case handling):
+   ```
+   IF <unwanted condition>
+   THEN THE SYSTEM SHALL <response>
+   ```
+5. **Optional feature** (only when a feature/config is present):
+   ```
+   WHERE <feature is enabled/present>
+   THE SYSTEM SHALL <response>
+   ```
+
+## Rules
+
+- One trigger, one observable response, per clause. Split compound
+  requirements ("...and also...") into separate clauses.
+- The response must be **observable and testable** — "the system shall
+  handle it correctly" is not EARS; "the system shall return 201 with the
+  created record" is.
+- Prefer concrete values over vague ones: status codes, field names, UI
+  copy — not "an appropriate error" or "some feedback".
+- Always pair the happy path (event-driven) with at least one unwanted-
+  behavior clause (IF/THEN) for the same trigger, where a failure mode
+  plausibly exists (invalid input, missing auth, not-found, etc.) — this
+  is what Stage 6's QA checklist most often catches gaps in.
+- Tag every clause with which repo it belongs to (a story is scoped to one
+  repo; a requirement can produce multiple stories, one per repo).
+
+## Example
+
+```
+Story: shop-api — Wishlist endpoints
+
+  WHEN a client sends POST /api/wishlist with a valid product id
+  THE SYSTEM SHALL persist the item and return 201 with the created record
+
+  IF a client sends POST /api/wishlist with a nonexistent product id
+  THEN THE SYSTEM SHALL return 404 and create no record
+
+  WHEN a client sends GET /api/wishlist
+  THE SYSTEM SHALL return all wishlist items for the current session,
+  ordered by most-recently-added first
+```
+
+## Grounding, not guessing
+
+Before writing stories, query `codegraph/api` (`/api/query`, `/api/graph`)
+for the actual current nodes/edges relevant to the requirement — real
+endpoint paths, real component names, real table columns — so EARS clauses
+reference things that actually exist in the codebase, not assumed names.

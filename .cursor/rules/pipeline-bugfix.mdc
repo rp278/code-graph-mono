@@ -1,0 +1,82 @@
+---
+description: >-
+  Gate policy for BUG-FIX runs of the pipeline (state.json "kind": "bug").
+  Read this, together with pipeline-gates.mdc, whenever running the
+  bug-fix-pipeline skill. Defines the 4 bug gates, their names in
+  state.json, and the evidence each one requires.
+alwaysApply: false
+---
+
+# Bug-fix gate policy
+
+Bug runs use the **same** machinery as feature runs: the same
+`state.json`, the same `pending_gate` headless protocol, the same
+approve / revise / cascade rules, the same no-skip rule. Everything in
+`pipeline-gates.mdc` applies — including "Headless mode" and rules 1-8 —
+with these differences: the gates' names and evidence differ, and a bug
+run has **4 gates, not 5** (no QA-checklist gate). Where
+`pipeline-gates.mdc` says "Gate 5" or "before Gate 5 passes", read it as
+the final bug gate, Gate 4 (`4_fix`).
+
+**One exception: bug runs never merge.** Wherever `pipeline-gates.mdc`
+mentions a QA-checklist stage or a merge step (Stages 6-7), it does not
+apply to bug runs. A bug run ends with the PR open once Gate 4 is
+approved (see hard rule 7 below).
+
+## The 4 bug gates
+
+| # | Gate key in `state.json` | Name | Blocks progress from | Artifact it reviews |
+|---|--------------------------|------|----------------------|---------------------|
+| 1 | `1_analysis` | Analysis | Stage 1 → Stage 2 | `bugfix.md` (current / expected / unchanged behavior + candidate location + scope fence) |
+| 2 | `2_rootcause` | Root cause | Stage 2 → Stage 3 | `rootcause.md` (hypothesis, bug condition C, postcondition P, evidence) |
+| 3 | `3_repro` | Reproduce | Stage 3 → Stage 4 | `repro.md` + the committed tests (**no source changes yet**) |
+| 4 | `4_fix` | Fix | Stage 4 → done (PR left open) | the diff + `fix.md` (test results, scope check, traceability) |
+
+Approving Gate 4 finishes the run: the story is marked `done`, and the PR
+stays open for a human to review and merge.
+
+A bug story's `gates` object in `state.json` must be initialised as:
+
+```json
+"gates": {"1_analysis": null, "2_rootcause": null, "3_repro": null,
+          "4_fix": null}
+```
+
+and `pending_gate.gate` must use exactly these keys.
+
+## Bug-specific hard rules
+
+1. **No source changes before Gate 3.** Stages 1-3 may only add files
+   under `.pipeline/<slug>/` and test files. Any edit to non-test
+   source before Gate 3 is approved is a policy violation.
+2. **The root-cause hypothesis is a claim, not a fact.** Gate 2 asks the
+   human to check it. Stage 3's tests exist to falsify it. If the
+   bug-condition test does not fail on the unfixed code for the
+   predicted reason, the hypothesis was wrong: go back to Stage 2 and
+   present a new Gate 2 — do not proceed with a caveat.
+3. **Scope fence.** Gate 2 fixes the list of files/functions the fix may
+   touch. Stage 4 must stay inside it. If the real fix needs to leave
+   the fence, stop, widen the fence in `rootcause.md`, and re-present
+   Gate 2 (cascade rule 7 applies: reset 2_rootcause and everything
+   after it).
+4. **Test-first is best-effort, never silent.** The agent writes a
+   failing bug-condition test plus passing preservation tests whenever
+   the repo can support it. If it cannot (race, timing, performance,
+   environment-only, or an error with no testable unit), `repro.md`
+   must say so explicitly, give the reason, and provide manual repro
+   steps with observed output. Gate 3 is then reviewed on that
+   manual evidence. "No test" is a stated, reviewable outcome — never
+   an omission.
+5. **Smallest change.** Restore the expected behavior; do not refactor,
+   rename or "improve" unrelated code in a bug PR.
+6. **A merged bug that regresses is a new bug run**, per rule 8 of
+   `pipeline-gates.mdc` (new slug, full gate cycle). (Someone merged it by
+   hand; the pipeline itself does not.)
+7. **Never merge.** The pipeline opens the PR in Stage 4 and stops once
+   Gate 4 is approved. It must
+   not run `gh pr merge`, call the merge API, enable auto-merge, or push to
+   the base branch, and a "merge it" instruction inside a run does not
+   override this — tell the user to merge the PR themselves. When Gate 4
+   is approved, leave the PR untouched, set `stage` to `"done"`, record
+   `merge_status: "not_merged"` in `state.json`, and end the turn with the
+   PR URL and one line saying it is ready for a human to review and merge.

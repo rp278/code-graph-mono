@@ -1,0 +1,29 @@
+{
+	"folders": [
+		{
+			"path": "graphify"
+		},
+		{
+			"path": "tb-common-mfe"
+		},
+		{
+			"path": "codegraph"
+		},
+		{
+			"path": "tb-discovery-mfe"
+		},
+		{
+			"path": "tb-marketing-xapi"
+		},
+		{
+			"path": "tb-discovery-xapi"
+		},
+		{
+			"path": "tb-selection-xapi"
+		},
+		{
+			"path": "kairos-fabric"
+		}
+	],
+	"settings": {}
+}

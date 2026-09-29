@@ -1,0 +1,56 @@
+---
+description: >-
+  How to compute and execute dependency waves for Stage 3 (Implementation)
+  of the requirement pipeline. Read this when a requirement has produced
+  more than one approved story and implementation is about to start.
+alwaysApply: false
+---
+
+# Dependency-wave implementation
+
+Stage 3 implements all approved stories for a requirement. When a
+requirement produced more than one story (multi-repo), don't implement
+them in an arbitrary order or all-at-once — group into **waves** by
+dependency, then run each wave's stories **in true parallel** via separate
+subagent `Task` calls (per the locked decision in `pipeline/DESIGN.md`
+§10.3), one task per story in that wave.
+
+## Computing waves
+
+1. For each approved story, identify what it actually needs to exist
+   first — a real dependency, not just "same requirement":
+   - A frontend story that calls a new backend endpoint depends on that
+     endpoint's story.
+   - A story that relies on a new graphify node/edge type depends on that
+     `graphify` change landing (and its rebuild) first.
+   - Two backend stories touching unrelated tables/routes have no
+     dependency on each other, even in the same requirement.
+2. Topologically sort: Wave 1 = stories with no dependencies on other
+   stories in this requirement. Wave 2 = stories depending only on Wave 1.
+   Continue until every story is placed.
+3. State the computed waves explicitly before starting implementation
+   (e.g. in each affected repo's `.pipeline/<slug>/state.json` or as a
+   message to the user) —
+   this itself isn't a separate gate, but should be visible, since it
+   determines execution order and what "in progress" means at any moment.
+
+## Executing a wave
+
+- Dispatch one `Task` subagent per story in the wave, in the same
+  turn/batch — not sequential Task calls waited on one at a time.
+- Each subagent works on its own branch
+  (`pipeline/<requirement-slug>/<repo>`) and only touches its own repo —
+  waves are safe to parallelize because stories are scoped to different
+  repos (or at minimum, non-overlapping files); if two stories in the
+  same wave would touch the same file, that's a real dependency you
+  missed in step 1 — split them into different waves instead of hoping
+  the parallel edits don't collide.
+- A wave is "complete" once every subagent in it has finished its
+  implementation (Stage 3 only — critique/traceability/QA still follow
+  per-story, not per-wave). Don't start Wave N+1 until Wave N's code
+  changes are actually in place, since Wave N+1 may need to read them.
+
+## When there's only one story
+
+Skip the wave computation — a single-story requirement is trivially
+"Wave 1 of 1", no parallelism needed.

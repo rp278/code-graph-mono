@@ -29,7 +29,8 @@ load_dotenv(BASE_DIR / ".env")  # optional: NEO4J_*, CURSOR_API_KEY, etc. live h
 from . import ask_agent, pipeline_agent  # noqa: E402
 
 REPOS_FILE = Path(os.environ.get("CODEGRAPH_REPOS", BASE_DIR / "repos.json"))
-GRAPHIFY_DIR = Path(os.environ.get("GRAPHIFY_DIR", "/home/hatch/workspace/graphify"))
+# Default: the `graphify` checkout next to `codegraph` in the workspace folder.
+GRAPHIFY_DIR = Path(os.environ.get("GRAPHIFY_DIR", BASE_DIR.parent.parent / "graphify"))
 
 NEO4J_URI = os.environ.get("NEO4J_URI", "bolt://localhost:7687")
 NEO4J_USER = os.environ.get("NEO4J_USER", "neo4j")

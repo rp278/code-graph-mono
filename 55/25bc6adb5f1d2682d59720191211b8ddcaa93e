@@ -1,0 +1,25 @@
+README.md
+  s_99c32d72d5286c::t_18a63d21cbd114 33
+repos.manifest.json
+  s_99c32d72d5286c::t_18a63d21cbd114 7-8
+.gitignore
+  s_99c32d72d5286c::t_18a63d21cbd114 19
+.cursor/rules/codegraph.md
+  s_99c32d72d5286c::t_18a63d21cbd114 17,91-92
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.4",
+  "base_commit_sha": "5525bc6adb5f1d2682d59720191211b8ddcaa93e",
+  "prompts": {},
+  "sessions": {
+    "s_99c32d72d5286c": {
+      "agent_id": {
+        "tool": "cursor",
+        "id": "cf35b73d-bb00-4de2-a827-c8b55f302d72",
+        "model": "claude-sonnet-5-5"
+      },
+      "human_author": "Ramesh Polishetti <rp278@tmw.com>"
+    }
+  }
+}

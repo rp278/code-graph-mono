@@ -5,13 +5,14 @@
   "agent_id": "agent-e0fb4ba2-eacc-44fe-899d-614a86ea95e7",
   "notes": [
     "Started via dashboard (Cursor SDK, local runtime) at 2026-09-29T05:59:52.760851+00:00.",
-    "Stage 1: located in tb-discovery-mfe helpers/formatters.ts slugify via graph + stack match."
+    "Stage 1: located in tb-discovery-mfe helpers/formatters.ts slugify via graph + stack match.",
+    "Gate 1_analysis for tb-discovery-mfe approved; Stage 2 rootcause presented."
   ],
   "stories": {
     "tb-discovery-mfe": {
-      "stage": "1-analysis",
+      "stage": "2-rootcause",
       "gates": {
-        "1_analysis": null,
+        "1_analysis": "approved",
         "2_rootcause": null,
         "3_repro": null,
         "4_fix": null
@@ -19,9 +20,9 @@
       "branch": null,
       "pr_url": null,
       "pending_gate": {
-        "gate": "1_analysis",
-        "presented_at": "2026-09-29T06:02:00.000Z",
-        "summary": "Analysis for tb-discovery-mfe: stack and live codeGraph both point at helpers/formatters.ts slugify (line 47), which calls queryValue.toLowerCase() with no guard. WHEN slugify receives undefined/non-string it throws TypeError; expected recovery is return '' without throwing, while string inputs keep today’s encodeURIComponent slug behavior. Provisional scope fence is slugify only (plus tests in Stage 3). Artifact: tb-discovery-mfe/.pipeline/bug-typeerror-cannot-read-properties-of/bugfix.md."
+        "gate": "2_rootcause",
+        "presented_at": "2026-09-29T06:03:30.000Z",
+        "summary": "Root cause for tb-discovery-mfe: slugify (helpers/formatters.ts:46-47) calls queryValue.toLowerCase() with no guard; undefined/non-string input throws the reported TypeError. Commit 98b94cfc5 removed the prior typeof !== 'string' → '' check. Bug condition C: typeof x !== 'string'. Postcondition P: return '' without throwing. Preservation: string inputs keep identical encodeURIComponent slug output. Proposed fix: restore that one guard only. Artifact: tb-discovery-mfe/.pipeline/bug-typeerror-cannot-read-properties-of/rootcause.md."
       }
     }
   }

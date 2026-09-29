@@ -4,5 +4,6 @@
   {"name": "tb-marketing-xapi", "github": "MensWearhouse/tb-marketing-xapi", "language": "typescript"},
   {"name": "tb-discovery-xapi", "github": "MensWearhouse/tb-discovery-xapi", "language": "java"},
   {"name": "tb-selection-xapi", "github": "MensWearhouse/tb-selection-xapi", "language": "java"},
-  {"name": "kairos-fabric",     "github": "MensWearhouse/kairos-fabric",     "language": "typescript"}
+  {"name": "kairos-fabric",     "github": "MensWearhouse/kairos-fabric",     "language": "typescript"},
+  {"name": "ecom-content-stack", "github": "MensWearhouse/ecom-content-stack", "language": "java"}
 ]

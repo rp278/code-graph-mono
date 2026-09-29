@@ -30,7 +30,7 @@ The design is written up in [`docs/HACKATHON_DESIGN.md`](docs/HACKATHON_DESIGN.m
 | [`docs/`](docs) | Design doc and slides |
 
 The work repos themselves (`tb-common-mfe`, `tb-discovery-mfe`, `tb-marketing-xapi`, `tb-discovery-xapi`,
-`tb-selection-xapi`, `kairos-fabric`) are **not** part of this repo. `setup.sh` clones them next to it, or links
+`tb-selection-xapi`, `kairos-fabric`, `ecom-content-stack`) are **not** part of this repo. `setup.sh` clones them next to it, or links
 existing checkouts, and they are git-ignored.
 
 ## Quick start

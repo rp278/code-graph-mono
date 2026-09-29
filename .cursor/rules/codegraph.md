@@ -14,6 +14,7 @@ an agent API and dashboard. Branch `main` (the work repos may use `master`).
 | `tb-discovery-xapi` | Work repo (Java/Maven experience API). Symlink to `~/Desktop/code/tb-discovery-xapi`. |
 | `tb-selection-xapi` | Work repo (Java/Maven experience API). Symlink to `~/Desktop/code/tb-selection-xapi`. |
 | `kairos-fabric` | Work repo (TypeScript design-system library, published as `@MensWearhouse/kairos-fabric`). Symlink to `~/Desktop/code/kairos-fabric`. |
+| `ecom-content-stack` | Work repo (Java). Cloned by `setup.sh` from `MensWearhouse/ecom-content-stack` (default branch `develop`). |
 | `graphify` | Fork of upstream graphify (tree-sitter code-graph extractor). Heavily customized — see below. |
 | `codegraph` | The agent: FastAPI backend (`api/`, port 8000) + React dashboard (`web/`, port 5173), Neo4j as the graph store. |
 
@@ -87,8 +88,8 @@ source files → extraction (per repo) → link pass (global) → JSON → Neo4j
 ## Conventions
 
 - One monorepo holds `codegraph/`, `graphify/`, `.cursor/`, `setup.sh` and
-  `SETUP.md`. The `tb-*` work repos and `kairos-fabric` are NOT part of it: they are
-  symlinks to separate checkouts (gitignored). Never auto-sync.
+  `SETUP.md`. The work repos (`repos.manifest.json`) are NOT part of it: they are
+  clones or symlinks to separate checkouts (gitignored). Never auto-sync.
 - Secrets live in `.env` files only — never in chat, never in git.
 - Dashboard: single repo selector in the header (default "All repos"); selecting one
   repo includes its direct cross-repo neighbors; chat scope label is centered.

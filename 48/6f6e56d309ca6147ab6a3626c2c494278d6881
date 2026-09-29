@@ -1,0 +1,31 @@
+graphify/graphify/extract_services.py
+  s_99c32d72d5286c::t_e3bbe78da62f13 17-25,49-70,91-96,102-116
+codegraph/api/src/main.py
+  s_99c32d72d5286c::t_178af4dc34b42a 444-448
+SETUP.md
+  s_99c32d72d5286c::t_d2c2fd127c09fe 123-140
+setup.sh
+  s_99c32d72d5286c::t_553c669566d0d9 135-140
+graphify/graphify/codegraph.py
+  s_99c32d72d5286c::t_e3bbe78da62f13 30,115-116,141-142,146,236-237
+graphify/tests/test_services.py
+  s_99c32d72d5286c::t_1bc058f5500d87 1-43
+repos.manifest.json
+  s_99c32d72d5286c::t_553c669566d0d9 4-9,11-12
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.4",
+  "base_commit_sha": "486f6e56d309ca6147ab6a3626c2c494278d6881",
+  "prompts": {},
+  "sessions": {
+    "s_99c32d72d5286c": {
+      "agent_id": {
+        "tool": "cursor",
+        "id": "cf35b73d-bb00-4de2-a827-c8b55f302d72",
+        "model": "claude-sonnet-5-5"
+      },
+      "human_author": "Ramesh Polishetti <rp278@tmw.com>"
+    }
+  }
+}

@@ -8,24 +8,21 @@
     "Gate 1 presented: located ECS_40001 in ecom-content-stack; candidate cause is application-local.yaml ContentStack base-url defaults ending in /v3/test.",
     "Gate 1 approved for ecom-content-stack; Stage 2 rootcause.md presented.",
     "Gate 2 approved; Stage 3 repro: JUnit added; Maven blocked by private parent POM 401; standalone assertions match hypothesis (bug FAIL, preservation PASS). Gate 3 presented.",
-    "Gate 3 approved; Stage 4 fix applied (restore /v3 defaults); PR opened https://github.com/MensWearhouse/ecom-content-stack/pull/352; Gate 4 presented."
+    "Gate 3 approved; Stage 4 fix applied (restore /v3 defaults); PR opened https://github.com/MensWearhouse/ecom-content-stack/pull/352; Gate 4 presented.",
+    "Gate 4 approved; story done; PR left open (merge_status: not_merged)."
   ],
   "stories": {
     "ecom-content-stack": {
-      "stage": "4-fix",
+      "stage": "done",
       "gates": {
         "1_analysis": "approved",
         "2_rootcause": "approved",
         "3_repro": "approved",
-        "4_fix": null
+        "4_fix": "approved"
       },
       "branch": "pipeline/bug-error-stack-trace-serviceerrors-code/ecom-content-stack",
       "pr_url": "https://github.com/MensWearhouse/ecom-content-stack/pull/352",
-      "pending_gate": {
-        "gate": "4_fix",
-        "presented_at": "2026-09-29T20:56:14.213520+00:00",
-        "summary": "Fix for ecom-content-stack: restored application-local.yaml ContentStack CDN and Management base-url defaults from \u2026/v3/test to \u2026/v3 (scope fence only). Standalone predicates that failed at Gate 3 now all PASS; preservation still PASS. PR https://github.com/MensWearhouse/ecom-content-stack/pull/352 opened against develop (body = fix.md). Awaiting Gate 4 approval of the diff + fix.md; PR will remain open (pipeline does not merge)."
-      }
+      "merge_status": "not_merged"
     }
   }
 }

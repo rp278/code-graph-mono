@@ -19,7 +19,7 @@ from pathlib import Path
 from .extract import _make_id
 
 HTTP_METHODS = {"get", "post", "put", "delete", "patch", "options", "head"}
-ROUTE_RECEIVERS = {"fastify", "app", "server", "router", "api"}
+ROUTE_RECEIVERS = {"fastify", "app", "server", "router", "api", "instance"}
 FETCH_FUNCTIONS = {"fetch", "request"}
 # member-expression style HTTP clients, e.g. axios.get('/api/...')
 HTTP_CLIENT_OBJECTS = {"axios"}
@@ -32,7 +32,9 @@ def _get_parser(suffix: str):
 
     if suffix in (".ts", ".tsx"):
         import tree_sitter_typescript as tslang
-        language = Language(tslang.language_typescript())
+        # .tsx needs the TSX grammar: the plain TypeScript one cannot parse JSX,
+        # so components / <Route> / fetches inside them were silently lost.
+        language = Language(tslang.language_tsx() if suffix == ".tsx" else tslang.language_typescript())
     else:
         import tree_sitter_javascript as tslang
         language = Language(tslang.language())
@@ -92,7 +94,8 @@ def _api_path_from_arg(source: bytes, arg_node) -> str | None:
     Returns None when the argument has no /api/ literal.
     """
     t = _text(source, arg_node)
-    if "/api/" not in t and not t.rstrip("`'\"").endswith("/api"):
+    # "/api/...", "/api-replatform/...", or a bare "/api"
+    if not re.search(r"/api(?:[-/]|$)", t.rstrip("`'\"")) and not re.search(r"/api[-/]", t):
         return None
     if arg_node.type == "template_string":
         t = _normalize_template(t)
@@ -112,6 +115,12 @@ def _path_matches(endpoint_path: str, fetch_path: str) -> bool:
     """Segment-wise match where :param segments act as wildcards."""
     es = endpoint_path.strip("/").split("/")
     fs = fetch_path.strip("/").split("/")
+    if es and es[-1].endswith("*"):
+        # Next.js catch-all ([...path]): matches any number of trailing segments
+        es = es[:-1]
+        if len(fs) < len(es):
+            return False
+        fs = fs[: len(es)]
     if len(es) != len(fs):
         return False
     for e, f in zip(es, fs):
@@ -195,8 +204,11 @@ def _iter_functions(source: bytes, root):
                                     yield _text(source, name_node), body
 
 
-def extract_fastify(path: Path, repo: str) -> dict:
-    """Find fastify/app.get|post|put|delete|patch('/path', handler) route registrations."""
+def extract_fastify(path: Path, repo: str, prefix: str = "") -> dict:
+    """Find fastify/app.get|post|put|delete|patch('/path', handler) route registrations.
+
+    ``prefix`` is the URL prefix the plugin is registered under (see
+    ``extract_backends.fastify_prefixes``)."""
     if path.suffix not in JS_SUFFIXES:
         return {"nodes": [], "edges": [], "pending_edges": [], "api_clients": {}, "client_calls": [], "components": set()}
     try:
@@ -243,7 +255,12 @@ def extract_fastify(path: Path, repo: str) -> dict:
                     if route_path:
                         line = node.start_point[0] + 1
                         method = _text(source, prop).upper()
-                        eid = _endpoint_id(method, route_path)
+                        if prefix:
+                            route_path = "/" + "/".join(
+                                p.strip("/") for p in (prefix, route_path) if p.strip("/")
+                            )
+                        # repo-scoped id so e.g. GET /ping in two repos stays two nodes
+                        eid = f"endpoint:{repo}:{method}:{route_path}"
                         add_node(_new_node(
                             eid, f"{method} {route_path}", "endpoint", str_path, line,
                             method=method, path=route_path,
@@ -296,6 +313,21 @@ def extract_react(path: Path, repo: str) -> dict:
             line = body.start_point[0] + 1
             add_node(_new_node(_make_id(stem, fname), fname, "component", str_path, line))
 
+    # Module constants holding a URL: `const ENDPOINT = '/api/...'` so that
+    # `fetch(ENDPOINT)` can be resolved (same-file only; first declaration wins).
+    str_consts: dict[str, object] = {}
+
+    def collect_consts(n):
+        if n.type == "variable_declarator":
+            nm, val = n.child_by_field_name("name"), n.child_by_field_name("value")
+            if nm is not None and val is not None and nm.type == "identifier" \
+                    and val.type in ("string", "template_string"):
+                str_consts.setdefault(_text(source, nm), val)
+        for c in n.children:
+            collect_consts(c)
+
+    collect_consts(root)
+
     def current_source(func_stack: list[str]) -> str:
         # outermost enclosing component wins (calls are often nested inside
         # useEffect / async arrow-function callbacks)
@@ -311,7 +343,10 @@ def extract_react(path: Path, repo: str) -> dict:
         named = [c for c in args.children if c.is_named]
         if not named:
             return
-        api_path = _api_path_from_arg(source, named[0])
+        first = named[0]
+        if first.type == "identifier":
+            first = str_consts.get(_text(source, first), first)
+        api_path = _api_path_from_arg(source, first)
         if not api_path:
             return
         line = node.start_point[0] + 1
@@ -497,12 +532,12 @@ def _merge_results(results: list[dict]) -> dict:
             "components": components}
 
 
-def extract_frameworks(path: Path, repo: str) -> dict:
+def extract_frameworks(path: Path, repo: str, prefix: str = "") -> dict:
     """Run all framework extractors on a JS/TS file. Returns nodes, edges,
     pending_edges (fetches awaiting endpoint resolution), api_clients,
     client_calls, and components."""
     return _merge_results([
-        extract_fastify(path, repo),
+        extract_fastify(path, repo, prefix),
         extract_react(path, repo),
         extract_sql(path, repo),
     ])

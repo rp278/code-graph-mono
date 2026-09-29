@@ -31,6 +31,9 @@ def _config(uri=None, user=None, password=None):
     )
 
 
+_EDGE_RESERVED = {"source", "target", "relation", "repo", "gid", "id"}
+
+
 def _rel_type(relation: str) -> str:
     t = re.sub(r"[^A-Z0-9_]", "_", (relation or "RELATED").upper())
     return t or "RELATED"
@@ -121,6 +124,9 @@ def push_codegraph(extraction: dict, uri=None, user=None, password=None) -> dict
                     "source_location": e.get("source_location", ""),
                     "weight": float(e.get("weight", 1.0)),
                 }
+                for k, v in e.items():  # extra scalar props (version_spec, drift, count, ...)
+                    if k not in _EDGE_RESERVED and k not in eprops and isinstance(v, (str, int, float, bool)):
+                        eprops[k] = v
                 session.run(
                     f"""
                     MATCH (a:Node {{gid: $src}}), (b:Node {{gid: $tgt}})

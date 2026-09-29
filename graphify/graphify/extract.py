@@ -218,7 +218,8 @@ def extract_js(path: Path) -> dict:
         if path.suffix in (".ts", ".tsx"):
             import tree_sitter_typescript as tslang
             from tree_sitter import Language, Parser
-            language = Language(tslang.language_typescript())
+            # .tsx needs the TSX grammar (plain TypeScript cannot parse JSX)
+            language = Language(tslang.language_tsx() if path.suffix == ".tsx" else tslang.language_typescript())
         else:
             import tree_sitter_javascript as tslang
             from tree_sitter import Language, Parser

@@ -1,0 +1,32 @@
+codegraph/web/src/components/RequirementsView.jsx
+  s_99c32d72d5286c::t_f8d7a2d913f386 665
+  s_99c32d72d5286c::t_bc4622e373d8f9 683-688
+.cursor/rules/pipeline-gates.mdc
+  s_99c32d72d5286c::t_64e0d6c2ced455 122-126
+codegraph/web/src/api.js
+  s_99c32d72d5286c::t_ce3275d612091d 63
+codegraph/api/src/pipeline_agent.py
+  s_99c32d72d5286c::t_746554f1c0abb0 402-412
+  s_99c32d72d5286c::t_5254d0dabff88b 239-296
+  s_99c32d72d5286c::t_ccf1eb22a90c12 562
+.cursor/skills/bug-fix-pipeline/SKILL.md
+  s_99c32d72d5286c::t_b7a18ded655f59 68-75
+  s_99c32d72d5286c::t_84182fa5c21997 300-305
+  s_99c32d72d5286c::t_0d2f1596b73e70 92-94
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.4",
+  "base_commit_sha": "5ed1815efd1630fc44076f6d16a7b1e368e84fe3",
+  "prompts": {},
+  "sessions": {
+    "s_99c32d72d5286c": {
+      "agent_id": {
+        "tool": "cursor",
+        "id": "cf35b73d-bb00-4de2-a827-c8b55f302d72",
+        "model": "claude-sonnet-5-5"
+      },
+      "human_author": "Ramesh Polishetti <rp278@tmw.com>"
+    }
+  }
+}

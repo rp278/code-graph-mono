@@ -1,7 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { api } from '../api';
-import { renderRich } from './richText';
-
 // Feature and bug runs share one state machine but use different gate
 // keys/names (see .cursor/rules/pipeline-gates.mdc and pipeline-bugfix.mdc).
 const FEATURE_GATE_LABELS = {
@@ -265,74 +263,7 @@ function RequirementList({ items, selectedSlug, onSelect, loading, error, onRetr
   );
 }
 
-const DOC_LABELS = {
-  requirement: 'Requirement',
-  stories: 'Stories',
-  bugfix: 'Analysis',
-  design: 'Plan',
-  rootcause: 'Root cause',
-  repro: 'Reproduce',
-  fix: 'Fix',
-  critique: 'Critique',
-  traceability: 'Traceability',
-  'qa-checklist': 'QA checklist',
-};
-
-// Documents the run wrote for one repo (codegraph/pipeline/<slug>/<repo>/*.md).
-function StoryDocs({ slug, repo, version }) {
-  const [open, setOpen] = useState(false);
-  const [docs, setDocs] = useState(null);
-  const [active, setActive] = useState(null);
-  const [error, setError] = useState(null);
-
-  useEffect(() => {
-    if (!open) return undefined;
-    let cancelled = false;
-    api
-      .getRequirementArtifacts(slug)
-      .then((r) => {
-        if (cancelled) return;
-        setDocs(r.repos?.[repo] || []);
-        setError(null);
-      })
-      .catch((e) => !cancelled && setError(e.message || String(e)));
-    return () => {
-      cancelled = true;
-    };
-  }, [open, slug, repo, version]);
-
-  const current = docs?.find((d) => d.name === active) || docs?.[0];
-  return (
-    <div className="story-docs">
-      <button className="link-btn" onClick={() => setOpen((o) => !o)}>
-        {open ? 'Hide documents' : 'View documents (analysis, root cause…)'}
-      </button>
-      {open && error && <div className="banner error">{error}</div>}
-      {open && !error && docs && docs.length === 0 && (
-        <p className="muted">No documents written for this repo yet.</p>
-      )}
-      {open && current && (
-        <>
-          <div className="story-doc-tabs">
-            {docs.map((d) => (
-              <button
-                key={d.name}
-                className={`link-btn story-doc-tab ${d.name === current.name ? 'active' : ''}`}
-                onClick={() => setActive(d.name)}
-              >
-                {DOC_LABELS[d.name] || d.name}
-              </button>
-            ))}
-          </div>
-          <div className="story-doc-body">{renderRich(current.content)}</div>
-        </>
-      )}
-    </div>
-  );
-}
-
 function StoryCard({
-  slug,
   repo,
   story,
   runStatus,
@@ -363,11 +294,6 @@ function StoryCard({
         </a>
       )}
       {story.merge_status === 'merged' && <span className="merged-badge">Merged</span>}
-      <StoryDocs
-        slug={slug}
-        repo={repo}
-        version={`${story.stage}|${JSON.stringify(story.gates || {})}`}
-      />
       {responseQueued && (
         <div className="queued-note muted">
           Your response is queued — the agent will pick it up as soon as it finishes its
@@ -690,7 +616,6 @@ function RequirementDetail({
         {stories.map(([repo, story]) => (
           <StoryCard
             key={repo}
-            slug={slug}
             repo={repo}
             story={story}
             runStatus={detail.run_status}
@@ -737,7 +662,7 @@ function RequirementDetail({
                 </div>
                 <textarea
                   className="revise-input"
-                  placeholder="Optional feedback if revising…"
+                  placeholder="What should change? (required to send back for revision)"
                   rows={2}
                   value={revisionDrafts[key] || ''}
                   onChange={(e) =>
@@ -755,7 +680,12 @@ function RequirementDetail({
                   </button>
                   <button
                     className="link-btn"
-                    disabled={responding}
+                    disabled={responding || !(revisionDrafts[key] || '').trim()}
+                    title={
+                      (revisionDrafts[key] || '').trim()
+                        ? undefined
+                        : 'Write what should change first — the agent acts on your feedback'
+                    }
                     onClick={() => revise(repo, gate)}
                   >
                     Send back for revision

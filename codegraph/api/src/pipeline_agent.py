@@ -236,6 +236,64 @@ def _parse_gate_response(message: str, state: dict[str, Any]) -> Optional[dict[s
     return {"repo": repo, "gate": gate, "presented_at": pg["presented_at"], "decision": decision}
 
 
+_REVISE_RE = re.compile(
+    r"^\s*gate\s+(\S+)\s+for\s+(\S+?):\s*revise\b\s*(?:[—–-]+\s*)?(.*)$",
+    re.IGNORECASE | re.DOTALL,
+)
+
+# Which document each gate presents (all live in codegraph/pipeline/<slug>/<repo>/).
+_GATE_DOCS = {
+    "1_analysis": "bugfix.md",
+    "2_rootcause": "rootcause.md",
+    "3_repro": "repro.md (and the test files)",
+    "4_fix": "fix.md (and the source fix)",
+    "1_stories": "stories.md",
+    "2_plan": "design.md",
+    "3_impl": "critique.md (and the code diff)",
+    "4_traceability": "traceability.md",
+    "5_qa": "qa-checklist.md",
+}
+
+
+def _agent_message(message: str) -> str:
+    """What the agent actually receives for `message`.
+
+    Gate approvals and free-text updates pass through unchanged. A revision
+    request ("gate <g> for <repo>: revise — <feedback>") is expanded into an
+    explicit instruction block: the terse one-liner was easy to treat as a
+    re-present request, so the reviewer's feedback was not acted on.
+    """
+    m = _REVISE_RE.match(message or "")
+    if not m:
+        return message
+    gate, repo, feedback = m.group(1), m.group(2), (m.group(3) or "").strip()
+    doc = _GATE_DOCS.get(gate, "that gate's document")
+    feedback_block = (
+        f"The reviewer's feedback (verbatim):\n<<<\n{feedback}\n>>>\n\n"
+        if feedback
+        else "The reviewer gave no written feedback: they rejected the gate as presented. "
+        "Re-check your evidence and assumptions instead of re-presenting the same thing.\n\n"
+    )
+    return (
+        f"REVISION REQUESTED — gate `{gate}` for `{repo}` was NOT approved.\n\n"
+        + feedback_block
+        + "The feedback is binding: where it conflicts with your earlier "
+        "conclusion, the feedback wins. Do the following, in order:\n"
+        "1. Act on it for real. If it names a repo, file, function, cause or "
+        "approach, go and investigate exactly that (read the code, run "
+        "queries/tests) before writing anything; do not just reword the old "
+        "document. If it names a different repo, start the investigation there.\n"
+        f"2. Rewrite `codegraph/pipeline/<slug>/{repo}/` — {doc} — with the "
+        "feedback incorporated. Put a `## Revision` section at the top "
+        "quoting the feedback verbatim and listing what you changed because of it.\n"
+        "3. Leave this gate unapproved, and reset every later gate (cascade "
+        "rule in pipeline-gates.mdc).\n"
+        "4. Write a NEW `pending_gate` for this gate with a fresh "
+        "`presented_at` timestamp (different from the previous one) and a "
+        "summary that says how the feedback was addressed, then end the turn.\n"
+    )
+
+
 def _same_gate(a: dict[str, Any], b: dict[str, Any]) -> bool:
     return (a["repo"], a["gate"], a["presented_at"]) == (b["repo"], b["gate"], b["presented_at"])
 
@@ -341,9 +399,17 @@ def _headless_prompt(
     if kind == "bug":
         hints = _clean_repo_hints(repo_hints)
         hint_line = (
-            f"Repo hints from the reporter (a starting point, NOT a "
-            f"constraint — follow the evidence if it points elsewhere): "
-            f"{', '.join(hints)}\n\n"
+            f"The reporter SELECTED these repos: {', '.join(hints)}.\n"
+            "Investigate them FIRST and thoroughly, before looking anywhere "
+            "else: run every graph query restricted to those repos, and "
+            "search their checkouts in `code-repos/` for every signal in the "
+            "error text and read the suspect code. If you find a credible "
+            "cause there, stay there — create the story for that repo and "
+            "only then trace callers/consumers in other repos for the blast "
+            "radius. Widen the search to the other repos ONLY if the selected "
+            "repos hold no credible cause, and when you do, say so explicitly "
+            "at Gate 1 (what you searched in the selected repos, why nothing "
+            "matched). Record the search order in `bugfix.md`.\n\n"
             if hints
             else             "The reporter gave no repo hints — locate the bug from the "
             "signals in the error text.\n\n"
@@ -493,7 +559,7 @@ def _run_one_turn(slug: str, agent: Any, message: str) -> Optional[str]:
             _runs[slug]["error"] = None
             _runs[slug].pop("pause_requested", None)
         _set_live_status(slug, "Starting…")
-        run = agent.send(message)
+        run = agent.send(_agent_message(message))
         with _runs_lock:
             _runs[slug]["run"] = run
             pause_now = bool(_runs[slug].get("pause_requested"))

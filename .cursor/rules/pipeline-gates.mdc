@@ -119,8 +119,11 @@ artifacts, the no-skip rule, the cascade rules above) is identical:
    approved"`) or a revision request (`"gate <id> for <repo>: revise —
    <feedback>"`). On approval: clear `pending_gate`, mark the gate
    `"approved"` in `state.json`, proceed to the next stage. On revision:
-   apply rule 4 above (rejection loops back), then re-present (new
-   `pending_gate`) once redone.
+   apply rule 4 above (rejection loops back). The feedback is binding:
+   act on what it names (investigate it, don't just reword), add a
+   `## Revision` section at the top of the gate's document quoting it and
+   listing what changed, then re-present with a **new** `pending_gate`
+   (fresh `presented_at`, summary stating how the feedback was addressed).
 5. **A message that doesn't reference a specific `gate`/`repo`** (e.g. a
    requirement-change message) should be handled per rules 7-8 above —
    the cascade logic applies the same way whether the message came from

@@ -60,10 +60,7 @@ export const api = {
   getAsk: (conversationId) => request(`/api/ask/${encodeURIComponent(conversationId)}`),
   query: (cypher, params = {}) => request('/api/query', { method: 'POST', body: { cypher, params } }),
   listRequirements: () => request('/api/requirements'),
-  getRequirement: (slug) => request(`/api/requirements/${encodeURIComponent(slug)}`),
-  getRequirementArtifacts: (slug) =>
-    request(`/api/requirements/${encodeURIComponent(slug)}/artifacts`),
-  startRequirement: (requirement, kind = 'feature', repos = []) =>
+  getRequirement: (slug) => request(`/api/requirements/${encodeURIComponent(slug)}`),  startRequirement: (requirement, kind = 'feature', repos = []) =>
     request('/api/requirements', { method: 'POST', body: { requirement, kind, repos } }),
   pauseRequirement: (slug) =>
     request(`/api/requirements/${encodeURIComponent(slug)}/pause`, { method: 'POST' }),

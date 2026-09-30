@@ -65,8 +65,14 @@ Merging is a human action outside this pipeline. (The feature skill's
    may be missing):
    - `Error / stack trace` — verbatim, the primary evidence.
    - `Title` — may be blank; if so, write a short one yourself and note it.
-   - `Repo hints` — repos the reporter suspects. A **starting point, not a
-     constraint**; if the evidence points elsewhere, say so at Gate 1/2.
+   - `Repo hints` — repos the reporter **selected**. Investigate these
+     **first and thoroughly** (graph queries filtered to them, then file
+     search + reading the code in their checkouts). If a credible cause is
+     there, stay there: the story is for that repo, and other repos are
+     only visited to map the blast radius. Widen to the other repos only
+     when the selected repos hold no credible cause, and say so explicitly
+     at Gate 1 (what was searched, why nothing matched). Record the search
+     order under "Search order" in `bugfix.md`.
    - `Extra details` — free text (when it happens, what changed recently).
 
 ## Stage 1 — Analyze & Locate
@@ -83,8 +89,9 @@ Merging is a human action outside this pipeline. (The feature skill's
    outward from the hit to get the **blast radius**: callers, importers,
    and API consumers of the suspect function/route (in *other* repos too —
    e.g. a `shop-api` route consumed by `shop-web`). If repo hints were
-   given, check those first; if the graph disagrees, report the
-   disagreement.
+   given, query and search **only those repos first** (filter on
+   `n.repo IN [...]`); widen only if they hold no credible cause. If the
+   graph disagrees with the hints, report the disagreement.
    **The graph is a map, not the code.** It holds structure (files,
    functions, endpoints, `FETCHES` / `CALLS` / `IMPORTS_FROM` edges), not
    what the code does, and it is built from *pushed* code — it will not
@@ -290,6 +297,12 @@ check out the `branch` recorded in `state.json`.
 
 A **revise** message means: redo the artifact of that gate, re-run
 whatever evidence it depends on, and present a fresh `pending_gate`.
+The reviewer's feedback in it is **binding**: investigate what it names
+(a different repo, file or cause included) before rewriting, put a
+`## Revision` section at the top of the document quoting the feedback
+verbatim and listing what changed because of it, reset later gates, and
+write the new `pending_gate` with a different `presented_at` and a summary
+of how the feedback was addressed. Never just re-present the same content.
 A **requirement changed** message (e.g. new details about the bug) follows
 the cascade rule: reset the earliest gate whose artifact it invalidates —
 new symptoms usually invalidate `2_rootcause` and everything after it.

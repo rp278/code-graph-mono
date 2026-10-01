@@ -1,0 +1,23 @@
+codegraph/pipeline/integrate-abtasty-event-tracking-for-add/state.json
+  s_b31acc98c207f4::t_8b1df4afcd5ce1 1-29
+codegraph/pipeline/integrate-abtasty-event-tracking-for-add/tb-discovery-mfe/requirement.md
+  s_b31acc98c207f4::t_b6aeaa5e5295f4 1-7
+codegraph/pipeline/integrate-abtasty-event-tracking-for-add/tb-discovery-mfe/stories.md
+  s_b31acc98c207f4::t_d1afb180c8c00b 1-74
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.4",
+  "base_commit_sha": "431900dca77b6a017c282d88e6d418c1600b29d2",
+  "prompts": {},
+  "sessions": {
+    "s_b31acc98c207f4": {
+      "agent_id": {
+        "tool": "cursor",
+        "id": "agent-5b0d1b43-7123-41e7-9869-099ffacd8435",
+        "model": "unknown"
+      },
+      "human_author": "Ramesh Polishetti <rp278@tmw.com>"
+    }
+  }
+}

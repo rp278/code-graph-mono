@@ -1,0 +1,29 @@
+{
+  "requirement": "Integrate AbTasty event tracking for add to cart on PDP",
+  "slug": "integrate-abtasty-event-tracking-for-add",
+  "kind": "feature",
+  "agent_id": "agent-5b0d1b43-7123-41e7-9869-099ffacd8435",
+  "notes": [
+    "Started via dashboard (Cursor SDK, local runtime) at 2026-10-01T00:43:17.321569+00:00.",
+    "Stage 1 complete: Graph + file search. develop already fires PDP → ATC Rate via emitAddToCartEvent → PdpTracking; gap is Matching Items / How To Wear It drawers (useSlideoutAddToBag). Sole story: tb-discovery-mfe. common-mfe bridge already exists — no story."
+  ],
+  "stories": {
+    "tb-discovery-mfe": {
+      "stage": "1-analysis",
+      "gates": {
+        "1_stories": null,
+        "2_plan": null,
+        "3_impl": null,
+        "4_traceability": null,
+        "5_qa": null
+      },
+      "branch": null,
+      "pr_url": null,
+      "pending_gate": {
+        "gate": "1_stories",
+        "presented_at": "2026-10-01T00:50:00.000Z",
+        "summary": "Stage 1 stories for integrate-abtasty-event-tracking-for-add: one story in tb-discovery-mfe. develop already maps successful emitAddToCartEvent ATC to AbTasty global goal \"PDP → ATC Rate\" via tb-common-mfe PdpTracking; the remaining gap is Matching Items / How To Wear It (Stylitics) drawers that add via useSlideoutAddToBag and never call that path. EARS cover all PDP ATC surfaces firing the goal once on success, never on failure, and never breaking ATC if tracking throws. No tb-common-mfe story (bridge exists). Fulfillment-specific Add_to_Cart_on_PDP_for_* server events on the local BFF proxy are noted as out of free-text scope. Artifacts: codegraph/pipeline/integrate-abtasty-event-tracking-for-add/tb-discovery-mfe/{requirement,stories}.md. Approve gate 1_stories for tb-discovery-mfe to proceed to design, or request revise with feedback."
+      }
+    }
+  }
+}
